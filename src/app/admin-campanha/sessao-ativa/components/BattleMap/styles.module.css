@@ -1,0 +1,243 @@
+.viewport {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: #111;
+  overflow: hidden; /* Corta o que sair da área */
+  cursor: crosshair; /* Cursor tático */
+  user-select: none; /* Evita selecionar texto ao arrastar */
+}
+
+.mapImage {
+  /* A imagem agora pode ser movida no futuro (pan/zoom), por enquanto ocupa 100% ou centraliza */
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  pointer-events: none; /* Imagem não interfere nos cliques */
+  opacity: 0.8;
+}
+
+/* O GRID 60x60 */
+.gridOverlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* --- TOKENS --- */
+.token {
+  position: absolute;
+  border-radius: 50%;
+  cursor: grab;
+  transition: transform 0.1s, box-shadow 0.2s; /* Animação suave só no hover */
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Não usamos transition de left/top aqui para o drag ficar 100% responsivo ao mouse */
+}
+
+.token:hover {
+  z-index: 20;
+  transform: scale(1.1);
+}
+
+.token.dragging {
+  cursor: grabbing;
+  z-index: 100;
+  pointer-events: none; /* Importante para o mouse event passar para o container */
+  opacity: 0.8;
+}
+
+.tokenImg {
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff; /* Cor sobrescrita inline */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+  background: #000;
+}
+
+.miniHp {
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  width: 80%;
+  height: 4px;
+  background: #000;
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid #fff;
+}
+.miniHpFill { height: 100%; }
+
+/* --- MEDIÇÃO (RÉGUA) --- */
+.measurementLayer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.svgOverlay {
+  width: 100%;
+  height: 100%;
+}
+
+.distanceBadge {
+  position: absolute;
+  background: #ff6600;
+  color: #000;
+  font-family: 'NinjaNaruto', sans-serif;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 1rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  border: 2px solid #fff;
+  white-space: nowrap;
+}
+
+/* --- MENU DE CONTEXTO --- */
+.menuBackdrop {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 900;
+  cursor: default;
+}
+
+.contextMenu {
+  position: absolute;
+  z-index: 1000;
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid #ff6600;
+  border-radius: 6px;
+  width: 160px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+  overflow: hidden;
+  animation: fadeIn 0.1s ease-out;
+}
+
+.menuHeader {
+  background: #1a1a1a;
+  color: #666;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-bottom: 1px solid #333;
+  letter-spacing: 1px;
+}
+
+.menuBtn {
+  background: transparent;
+  border: none;
+  padding: 10px 15px;
+  color: #eee;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-montserrat);
+  transition: 0.2s;
+  text-align: left;
+  border-bottom: 1px solid #222;
+}
+
+.menuBtn:last-child { border-bottom: none; }
+
+.menuBtn:hover {
+  background: rgba(255, 102, 0, 0.1);
+  color: #ff6600;
+  padding-left: 20px; /* Efeito de deslizar */
+}
+
+/* Estilo específico para cura */
+.healBtn:hover {
+  background: rgba(0, 255, 136, 0.1);
+  color: #44ff88;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+.viewport {
+  width: 100%; height: 100%; position: relative; background-color: #111; overflow: hidden;
+  user-select: none;
+}
+
+/* Cursores Contextuais */
+.viewport.move { cursor: grab; }
+.viewport.attack { cursor: crosshair; } /* Mira */
+.viewport.heal { cursor: copy; } /* Cruz */
+.viewport.aoe_cone, .viewport.aoe_circle, .viewport.aoe_line { cursor: crosshair; }
+
+.mapImage { min-width: 100%; min-height: 100%; object-fit: cover; pointer-events: none; opacity: 0.8; }
+
+.gridOverlay {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  pointer-events: none;
+}
+
+/* TOKENS */
+.token {
+  position: absolute; border-radius: 50%; cursor: grab; z-index: 20;
+  display: flex; justify-content: center; align-items: center; transition: transform 0.1s;
+}
+.token:hover { z-index: 30; transform: scale(1.1); }
+.token.dragging { cursor: grabbing; z-index: 100; pointer-events: none; opacity: 0.8; }
+
+.tokenImg {
+  width: 90%; height: 90%; border-radius: 50%; object-fit: cover;
+  border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.8); background: #000;
+}
+
+.miniHp {
+  position: absolute; bottom: 0; left: 10%; width: 80%; height: 4px;
+  background: #000; border-radius: 2px; overflow: hidden; border: 1px solid #fff;
+}
+.miniHpFill { height: 100%; transition: width 0.3s; }
+
+/* AOE & SVG */
+.aoeContainer {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;
+}
+.svgOverlay { width: 100%; height: 100%; }
+
+.distanceBadge {
+  position: absolute;
+  background: #ff6600; color: #000; font-family: 'NinjaNaruto', sans-serif;
+  padding: 4px 10px; border-radius: 4px; font-weight: 800; font-size: 1rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.8); border: 2px solid #fff; white-space: nowrap;
+  pointer-events: none; transform: translate(-50%, -100%);
+}
+
+/* MENU CONTEXTO */
+.menuBackdrop { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 900; }
+.contextMenu {
+  position: absolute; z-index: 1000; background: rgba(10, 10, 10, 0.95);
+  border: 1px solid #ff6600; border-radius: 6px; width: 160px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.8); overflow: hidden;
+  animation: fadeIn 0.1s ease-out;
+}
+.menuHeader { background: #1a1a1a; color: #666; font-size: 0.65rem; font-weight: 800; padding: 6px 10px; border-bottom: 1px solid #333; }
+.menuBtn {
+  background: transparent; border: none; padding: 10px 15px; color: #eee;
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  font-size: 0.85rem; font-weight: 600; transition: 0.2s; width: 100%; text-align: left; border-bottom: 1px solid #222;
+}
+.menuBtn:hover { background: rgba(255, 102, 0, 0.1); color: #ff6600; padding-left: 20px; }
+.healBtn:hover { background: rgba(0, 255, 136, 0.1); color: #44ff88; }
+
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+.viewport.down { cursor: help; } /* Cursor para modo derrubar */
+.delBtn:hover { background: rgba(255, 0, 0, 0.2); color: #ff4444; }

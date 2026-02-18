@@ -1,0 +1,97 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+  background: #111;
+  border: 1px solid #333;
+  width: 400px;
+  max-width: 90%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,1);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 15px;
+  background: #1a1a1a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+}
+
+.header h3 {
+  color: #ff6600;
+  font-family: 'NinjaNaruto', sans-serif;
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.closeBtn:hover { color: #fff; }
+
+.list {
+  padding: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobItem {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px;
+  background: #181818;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: 0.2s;
+}
+
+.mobItem:hover {
+  background: #222;
+  border-color: #ff6600;
+  transform: translateX(5px);
+}
+
+.mobAvatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #333;
+}
+
+.mobInfo strong {
+  display: block;
+  color: #eee;
+  font-size: 0.95rem;
+}
+
+.mobInfo span {
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 700;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

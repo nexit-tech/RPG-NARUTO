@@ -1,0 +1,112 @@
+.overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2500; animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+  background: #111; border: 1px solid #333; width: 450px; max-width: 95%; /* Um pouco mais largo */
+  border-radius: 8px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,1);
+  display: flex; flex-direction: column;
+}
+
+.header {
+  padding: 12px 15px; background: #1a1a1a; border-bottom: 1px solid #333;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.header h3 {
+  font-family: 'NinjaNaruto', sans-serif; color: #ff6600; font-size: 1rem; margin: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+.closeBtn { background: transparent; border: none; color: #666; cursor: pointer; transition: 0.2s; }
+.closeBtn:hover { color: #fff; }
+
+.content { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+.desc { color: #ccc; font-size: 0.85rem; text-align: center; margin: 0; line-height: 1.4; }
+.desc strong { color: #fff; }
+
+/* LISTA DE ALVOS (SELEÇÃO) */
+.targetList {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 300px; overflow-y: auto; padding-right: 5px;
+}
+
+.targetItem {
+  display: flex; align-items: center; gap: 12px; padding: 8px;
+  border-radius: 6px; cursor: pointer; transition: 0.2s; border: 1px solid transparent;
+}
+
+/* Estado: Acertou */
+.targetItem.hit { background: rgba(255, 68, 68, 0.1); border-color: rgba(255, 68, 68, 0.3); }
+.targetItem.hit .statusLabel { color: #ff4444; }
+
+/* Estado: Desviou */
+.targetItem.dodge { background: rgba(255, 255, 255, 0.05); opacity: 0.6; }
+.targetItem.dodge .statusLabel { color: #888; }
+
+.avatarWrapper { position: relative; width: 32px; height: 32px; flex-shrink: 0; }
+.avatarWrapper img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 1px solid #444; }
+
+.statusIconHit { 
+  position: absolute; bottom: -2px; right: -2px; background: #ff4444; color: #000; 
+  border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; 
+}
+.statusIconDodge {
+  position: absolute; bottom: -2px; right: -2px; background: #666; color: #fff;
+  border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; 
+}
+
+.targetName { flex: 1; font-weight: 700; color: #eee; font-size: 0.9rem; }
+.statusLabel { font-size: 0.7rem; font-weight: 800; }
+
+.nextBtn {
+  width: 100%; padding: 12px; background: #ff6600; color: #000; border: none; border-radius: 4px;
+  font-weight: 800; font-family: var(--font-montserrat); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.nextBtn:hover { background: #ff8533; }
+
+/* ETAPA DANO INDIVIDUAL */
+.damageSummary { text-align: center; color: #ccc; font-size: 0.9rem; margin-bottom: 5px; }
+
+/* Lista de Inputs de Dano */
+.damageList {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 250px; overflow-y: auto; padding-right: 5px; margin-bottom: 10px;
+}
+
+.damageRow {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #181818; padding: 8px 12px; border-radius: 6px; border: 1px solid #333;
+}
+
+.damageUserInfo { display: flex; align-items: center; gap: 10px; }
+.miniAvatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid #555; }
+.miniName { font-size: 0.85rem; font-weight: 600; color: #ddd; }
+
+/* Input Sem Setinhas */
+.miniInput {
+  background: #000; border: 1px solid #444; color: #fff;
+  font-family: 'NinjaNaruto', sans-serif; font-size: 1.2rem;
+  width: 70px; text-align: center; padding: 4px; border-radius: 4px;
+}
+.miniInput:focus { outline: none; border-color: #ff6600; }
+
+/* REMOVE SETINHAS (Spinners) */
+.miniInput::-webkit-outer-spin-button,
+.miniInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.miniInput[type=number] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Ações Finais */
+.actions { display: flex; gap: 10px; margin-top: 5px; }
+.backBtn { flex: 1; background: transparent; border: 1px solid #444; color: #aaa; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+.backBtn:hover { border-color: #fff; color: #fff; }
+.confirmBtn { flex: 2; background: #800; color: #fff; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 800; }
+.confirmBtn:hover { background: #ff0000; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

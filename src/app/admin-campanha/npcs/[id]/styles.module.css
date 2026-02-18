@@ -1,0 +1,120 @@
+.container {
+  min-height: 100vh;
+  background-color: #050505;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #080808,
+    #080808 10px,
+    #050505 10px,
+    #050505 20px
+  );
+  color: #eee;
+  padding: 0;
+  font-family: var(--font-montserrat);
+}
+
+.topNav {
+  padding: 1rem 2rem;
+  background: rgba(0,0,0,0.8);
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(5px);
+}
+
+.backLink {
+  color: #888;
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 700; text-transform: uppercase; font-size: 0.8rem;
+  transition: 0.2s;
+}
+.backLink:hover { color: #fff; }
+
+.statusBadge {
+  padding: 4px 12px; border-radius: 4px; font-weight: 900; letter-spacing: 1px; font-size: 0.8rem;
+}
+.ally { background: #0044aa; color: #fff; border: 1px solid #4488ff; }
+.enemy { background: #880000; color: #fff; border: 1px solid #ff4444; }
+
+/* LAYOUT PRINCIPAL */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 2rem;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* PERFIL (ESQUERDA) */
+.profileCard {
+  background: #111; border: 1px solid #333; border-radius: 8px; padding: 2rem;
+  text-align: center; display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5); height: fit-content;
+}
+
+.imageWrapper {
+  position: relative; width: 180px; height: 180px; margin-bottom: 1.5rem;
+}
+.avatar {
+  width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
+  border: 4px solid #333; filter: grayscale(20%);
+}
+.wantedStamp {
+  position: absolute; top: 10px; right: -10px; background: #880000; color: #fff;
+  font-family: 'NinjaNaruto', sans-serif; padding: 5px 10px; transform: rotate(15deg);
+  border: 2px solid #fff; font-size: 1.2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.name { font-family: 'NinjaNaruto', sans-serif; color: #ff6600; font-size: 2rem; margin: 0; line-height: 1; }
+.epithet { font-size: 0.9rem; color: #888; margin: 5px 0 15px 0; font-style: italic; }
+
+.villageInfo {
+  display: flex; align-items: center; gap: 8px; background: #222; padding: 5px 15px;
+  border-radius: 20px; font-size: 0.8rem; font-weight: 700; color: #ccc; margin-bottom: 2rem;
+}
+
+.statsBlock { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; }
+.statRow {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #080808; padding: 10px; border-radius: 4px; border: 1px solid #222;
+}
+.statLabel { display: flex; gap: 6px; font-size: 0.8rem; font-weight: 800; color: #666; }
+.statValue { font-family: 'NinjaNaruto', sans-serif; font-size: 1.2rem; color: #fff; }
+
+.bountyBox {
+  border: 2px dashed #880000; background: rgba(136, 0, 0, 0.1); padding: 10px; width: 100%;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.bountyBox label { color: #ff4444; font-size: 0.7rem; font-weight: 900; }
+.bountyBox span { font-family: 'NinjaNaruto'; font-size: 1.5rem; color: #fff; }
+
+/* DETALHES (DIREITA) */
+.detailsArea { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.panel {
+  background: #111; border: 1px solid #333; border-radius: 8px; padding: 1.5rem;
+}
+.panelTitle {
+  font-family: 'NinjaNaruto'; color: #ccc; border-bottom: 1px solid #333;
+  padding-bottom: 10px; margin-bottom: 15px; font-size: 1.1rem;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.traitList { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.traitList li {
+  padding: 8px; background: #1a1a1a; border-left: 3px solid #ff6600; color: #ddd; font-size: 0.9rem;
+}
+
+.jutsuTags { display: flex; flex-wrap: wrap; gap: 10px; }
+.jutsuTag {
+  background: #222; color: #00ccff; padding: 6px 12px; border-radius: 4px;
+  font-weight: 700; font-size: 0.85rem; border: 1px solid #333;
+}
+
+.loreText { color: #888; line-height: 1.6; font-size: 0.95rem; }
+
+@media (max-width: 900px) {
+  .contentGrid { grid-template-columns: 1fr; }
+}

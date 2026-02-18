@@ -1,0 +1,84 @@
+.jutsuCard {
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 8px; /* Arredondado padrão */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.jutsuCard:hover {
+  border-color: #ff6600;
+  transform: translateY(-3px);
+}
+
+.cardFields {
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.field {
+  border-bottom: 1px solid #1a1a1a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.field label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #555;
+  text-transform: uppercase;
+}
+
+.field span {
+  font-size: 0.8rem;
+  color: #eee;
+  font-weight: 700;
+}
+
+.fontNinja {
+  font-family: 'NinjaNaruto', sans-serif;
+  color: #ff6600 !important;
+  font-size: 1.2rem !important;
+  letter-spacing: 1px;
+}
+
+.highlight span {
+  color: #ffcc00;
+}
+
+/* --- DESCRIÇÃO --- */
+.descriptionSection {
+  background: #080808;
+  border-top: 1px solid #222;
+  padding: 1rem;
+  flex: 1;
+}
+
+.descHeader {
+  color: #444;
+  font-weight: 900;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+}
+
+.descBody p {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #888;
+  margin: 0;
+}

@@ -1,0 +1,95 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* MUDANÇA: Removi o backdrop-filter (blur) que causava o lag */
+  background-color: rgba(0, 0, 0, 0.9); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  
+  /* Animação suave de opacidade */
+  opacity: 0;
+  animation: overlayFadeIn 0.2s ease-out forwards;
+}
+
+.modalContainer {
+  background: linear-gradient(160deg, #1a1a1a 0%, #0d0d0d 100%);
+  border: 1px solid #ff6600;
+  /* Sombra estática (mais leve que animada) */
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 102, 0, 0.2);
+  
+  width: 90%;
+  max-width: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+
+  /* ESTADO INICIAL DA ANIMAÇÃO */
+  opacity: 0;
+  transform: scale(0.95) translateY(10px);
+  
+  /* OTIMIZAÇÃO DE GPU */
+  will-change: transform, opacity;
+  
+  /* A mágica da fluidez: delay de 0.05s pra dar tempo do overlay renderizar */
+  animation: modalPopIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.05s;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 102, 0, 0.2);
+}
+
+.title {
+  font-family: 'NinjaNaruto', sans-serif;
+  color: #ff6600;
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+  margin: 0;
+  text-shadow: 0 0 10px rgba(255, 102, 0, 0.4);
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+}
+
+.closeBtn:hover {
+  color: #ff6600;
+}
+
+.content {
+  padding: 2rem;
+}
+
+/* --- ANIMAÇÕES OTIMIZADAS --- */
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

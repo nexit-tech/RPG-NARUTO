@@ -1,0 +1,197 @@
+.container {
+  min-height: 100vh;
+  background-color: #050505;
+  background-image: radial-gradient(circle at 50% 0%, #111 0%, #050505 60%);
+  color: #f0f0f0;
+  padding: 2rem 3rem;
+  font-family: var(--font-montserrat);
+}
+
+/* HEADER */
+.header {
+  margin-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.backLink {
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  transition: 0.2s;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+.backLink:hover { color: #ff6600; }
+
+.stats {
+  background: #111;
+  padding: 5px 15px;
+  border-radius: 20px;
+  border: 1px solid #333;
+  color: #888;
+  font-size: 0.85rem;
+}
+.stats strong { color: #ff6600; }
+
+.titleArea { text-align: center; }
+.pageTitle {
+  font-family: 'NinjaNaruto', sans-serif;
+  color: #ff6600;
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 15px rgba(255, 102, 0, 0.4);
+}
+.subTitle { color: #666; font-size: 1rem; }
+
+/* SEARCH BAR */
+.searchBar {
+  max-width: 500px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+}
+.searchIcon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
+.searchBar input {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem;
+  background: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #fff;
+  font-family: var(--font-montserrat);
+  font-size: 1rem;
+  transition: 0.3s;
+}
+.searchBar input:focus {
+  outline: none;
+  border-color: #ff6600;
+  background: #151515;
+}
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.card {
+  background: #0f0f0f;
+  border: 1px solid #222;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.card:hover {
+  border-color: #ff6600;
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  z-index: 10;
+}
+
+.imageContainer {
+  height: 250px;
+  position: relative;
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: 0.4s;
+}
+.card:hover .image { transform: scale(1.1); }
+
+/* Badge de Nível flutuante na imagem */
+.levelBadge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.8);
+  color: #ff6600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  border: 1px solid #ff6600;
+}
+
+.cardContent {
+  padding: 1.5rem;
+  flex: 1;
+  background: linear-gradient(180deg, #111 0%, #0f0f0f 100%);
+}
+
+.name {
+  color: #fff;
+  font-family: 'NinjaNaruto', sans-serif;
+  font-size: 1.4rem;
+  margin-bottom: 0.2rem;
+  letter-spacing: 0.5px;
+}
+
+.clan {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.metaInfo {
+  display: flex;
+  gap: 10px;
+}
+
+.infoTag {
+  background: #222;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cardFooter {
+  padding: 1rem;
+  background: #1a1a1a;
+  border-top: 1px solid #222;
+  text-align: center;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card:hover .cardFooter {
+  background: #ff6600;
+  color: #000;
+}

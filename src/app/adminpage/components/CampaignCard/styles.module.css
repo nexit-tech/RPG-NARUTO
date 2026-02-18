@@ -1,0 +1,117 @@
+.card {
+  display: flex;
+  /* Fundo sutilmente mais claro que o preto total (#050505) */
+  background-color: #0f0f0f; 
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #222; /* Borda bem discreta */
+  transition: all 0.3s ease;
+  cursor: pointer;
+  height: 150px;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateX(5px); /* Move pra direita estilo menu de jogo */
+  border-color: #ff6600; /* Borda acende */
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8); /* Sombra pesada */
+}
+
+/* --- Área da Imagem --- */
+.imageWrapper {
+  width: 220px; /* Largura fixa da imagem */
+  position: relative;
+  flex-shrink: 0;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+
+.card:hover .image {
+  transform: scale(1.05); /* Zoom sutil na imagem ao passar o mouse */
+}
+
+.levelBadge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ff6600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border: 1px solid #ff6600;
+  backdrop-filter: blur(4px);
+}
+
+/* --- Conteúdo --- */
+.content {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+
+.title {
+  font-family: var(--font-montserrat);
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: #fff;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metaData {
+  display: flex;
+  gap: 1rem;
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #888;
+  font-size: 0.85rem;
+  background: #252525;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* --- Ações --- */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.iconBtn {
+  background: #333;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.iconBtn:hover {
+  background: #444;
+  color: #fff;
+}
+
+.deleteBtn:hover {
+  background: #3d1a1a;
+  color: #ff4444;
+}

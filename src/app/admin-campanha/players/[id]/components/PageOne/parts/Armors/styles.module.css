@@ -1,0 +1,66 @@
+.card {
+  background: #0a0a0a; border: 1px solid #222; border-radius: 8px;
+  display: flex; flex-direction: column; height: 100%;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.header {
+  padding: 1rem; border-bottom: 1px solid #222; background: #050505;
+  text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.header span {
+  font-family: 'NinjaNaruto', sans-serif; color: #4488ff; font-size: 1.1rem; letter-spacing: 1px;
+}
+
+.grid {
+  display: flex; flex-direction: column; justify-content: space-around; flex: 1; padding: 1rem 0;
+}
+
+.armorBox {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2rem; border-bottom: 1px solid #1a1a1a; transition: background 0.2s;
+}
+.armorBox:last-child { border-bottom: none; }
+.armorBox:hover { background: rgba(68, 136, 255, 0.05); }
+
+.armorBox label {
+  font-size: 0.9rem; color: #888; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+}
+
+.armorBox strong {
+  font-family: 'NinjaNaruto', sans-serif; font-size: 2.2rem; color: #fff;
+  text-shadow: 0 0 15px rgba(68, 136, 255, 0.3);
+}
+
+/* --- ESTILO DE INPUT NINJA (FONTE BONITA) --- */
+.inputNinja {
+  width: 80px;
+  background: transparent;
+  border: none;
+  /* Borda sutil apenas embaixo para saber onde digitar */
+  border-bottom: 2px solid #333; 
+  
+  /* A MESMA FONTE DO TEXTO ORIGINAL */
+  color: #fff;
+  font-family: 'NinjaNaruto', sans-serif;
+  font-size: 2.2rem;
+  
+  text-align: right; /* Alinha igual ao texto */
+  padding: 0;
+  line-height: 1;
+  transition: 0.3s;
+  text-shadow: 0 0 15px rgba(68, 136, 255, 0.3); /* Mantém o brilho azul */
+}
+
+.inputNinja:focus {
+  outline: none;
+  border-bottom-color: #4488ff; /* A linha acende azul ao focar */
+}
+
+/* Remove setinhas feias */
+.inputNinja::-webkit-outer-spin-button,
+.inputNinja::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.inputNinja[type=number] { -moz-appearance: textfield; }

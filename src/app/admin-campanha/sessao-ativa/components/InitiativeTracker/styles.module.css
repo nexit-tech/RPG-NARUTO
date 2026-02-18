@@ -1,0 +1,157 @@
+/* CONTAINER GERAL (GRID DE 3 COLUNAS) */
+.wrapper {
+  display: grid;
+  grid-template-columns: 260px 1fr 260px; /* Laterais fixas, meio flexível */
+  height: 100%;
+  width: 100%;
+  background: #0a0a0a;
+  border-bottom: 2px solid #ff6600;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+  overflow: hidden; /* Garante que nada saia daqui */
+}
+
+/* --- COLUNA 1: COLINHA DE DANO (ESQUERDA) --- */
+.rollRefContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 1rem;
+  background: #080808;
+  border-right: 1px solid #333;
+}
+
+.rollHeader {
+  font-family: 'NinjaNaruto', sans-serif; color: #aaa; font-size: 0.65rem; text-align: center;
+  background: #111; border: 1px solid #333; border-bottom: none; border-radius: 4px 4px 0 0; padding: 3px;
+  letter-spacing: 1px;
+}
+
+.rollGrid { 
+  display: grid; grid-template-columns: repeat(5, 1fr); 
+  border: 1px solid #333; background: #000;
+}
+
+.rollCell {
+  text-align: center; font-size: 0.75rem; font-weight: 800; padding: 4px 0; color: #000;
+}
+.rollCellText {
+  text-align: center; font-size: 0.5rem; font-weight: 700; padding: 3px 0; background: #222; color: #ccc; border-right: 1px solid #333;
+}
+.rollCellText:last-child { border-right: none; }
+
+/* Cores da Tabela */
+.red { background: #ff4444; }
+.yellow { background: #ffcc00; }
+.green { background: #44ff88; }
+
+
+/* --- COLUNA 2: TRACKER (CENTRO) --- */
+.trackContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Botões nas pontas */
+  padding: 0 1rem;
+  gap: 1rem;
+  overflow: hidden; /* CRUCIAL: Impede que os tokens vazem */
+  position: relative;
+  min-width: 0; /* CRUCIAL: Permite que o flex item encolha num grid */
+}
+
+/* Lista de Tokens (Scrollável se necessário, mas oculta scrollbar) */
+.track {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  padding: 10px 5px; /* Espaço para animação de scale */
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); /* Fade nas pontas */
+  flex: 1;
+  justify-content: center; /* Centraliza se tiver poucos */
+}
+.track::-webkit-scrollbar { display: none; } /* Chrome */
+
+/* TOKENS */
+.token {
+  display: flex; flex-direction: column; align-items: center;
+  opacity: 0.4; transform: scale(0.85); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  filter: grayscale(100%); flex-shrink: 0; /* Não esmaga os tokens */
+  cursor: pointer;
+}
+
+.token.active {
+  opacity: 1; transform: scale(1.15); filter: grayscale(0%); z-index: 10;
+  margin: 0 1rem; /* Espaço extra para o destaque */
+}
+
+.imgWrapper {
+  width: 55px; height: 55px; border-radius: 50%; border: 2px solid #444;
+  overflow: hidden; background: #000; transition: 0.3s;
+  position: relative;
+}
+.token.active .imgWrapper {
+  border-color: #ff6600; width: 70px; height: 70px;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.6);
+}
+.imgWrapper img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Badge de Turno */
+.turnLabel {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: #ff6600; color: #000; font-size: 0.6rem; font-weight: 900;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+  animation: bounce 1s infinite;
+}
+
+.name {
+  margin-top: 6px; font-family: 'NinjaNaruto', sans-serif; font-size: 0.7rem; color: #666;
+  white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis;
+  text-align: center;
+}
+.active .name { color: #ff6600; font-size: 0.9rem; max-width: 120px; }
+
+/* Botões de Navegação (Setas) */
+.navBtn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #151515; border: 1px solid #333; color: #888;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: 0.2s; flex-shrink: 0;
+}
+.navBtn:hover { border-color: #ff6600; color: #fff; background: #222; }
+
+/* Botão Próximo */
+.nextBtn {
+  background: #ff6600; color: #000; border: none; font-weight: 800;
+  border-radius: 4px; width: auto; padding: 0 1.2rem;
+  font-family: 'NinjaNaruto'; letter-spacing: 1px;
+}
+.nextBtn:hover { background: #ff8533; box-shadow: 0 0 15px rgba(255,102,0,0.3); }
+
+
+/* --- COLUNA 3: FICHA RÁPIDA (DIREITA) --- */
+.sheetContainer {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 1.5rem; background: #080808; border-left: 1px solid #333;
+}
+
+.sheetBtn {
+  width: 100%; height: 50px;
+  background: linear-gradient(90deg, #111, #151515);
+  border: 1px solid #333; border-radius: 6px;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 15px;
+  cursor: pointer; transition: 0.2s;
+}
+.sheetBtn:hover { border-color: #00ccff; box-shadow: 0 0 10px rgba(0, 204, 255, 0.1); }
+
+.sheetContent { display: flex; align-items: center; gap: 12px; }
+.sheetIcon { color: #00ccff; }
+.sheetText { display: flex; flex-direction: column; align-items: flex-start; }
+.sheetLabel { font-size: 0.6rem; color: #666; font-weight: 700; text-transform: uppercase; }
+.sheetName { font-family: 'NinjaNaruto'; color: #fff; font-size: 0.9rem; }
+.sheetArrow { color: #444; }
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-3px); }
+}

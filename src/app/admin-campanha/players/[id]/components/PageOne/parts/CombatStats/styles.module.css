@@ -1,0 +1,60 @@
+.card {
+  background: #0a0a0a; border: 1px solid #222; border-radius: 8px;
+  display: flex; flex-direction: column; height: 100%;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden;
+}
+.header { padding: 1rem; border-bottom: 1px solid #222; background: #050505; text-align: center; }
+.header span { font-family: 'NinjaNaruto', sans-serif; color: #ffcc00; font-size: 1.2rem; letter-spacing: 1px; }
+
+.statsList { display: flex; flex-direction: column; justify-content: space-around; flex: 1; padding: 0.5rem 0; }
+
+.statItem { 
+  display: flex; justify-content: space-between; align-items: center; 
+  padding: 0.8rem 1.5rem; border-bottom: 1px solid #151515; 
+  transition: background 0.2s; 
+}
+.statItem:last-child { border-bottom: none; }
+.statItem:hover { background: rgba(255, 204, 0, 0.05); }
+
+.info { display: flex; flex-direction: column; gap: 4px; }
+.label { color: #ddd; font-family: 'NinjaNaruto', sans-serif; font-size: 1rem; letter-spacing: 0.5px; }
+.formula { color: #666; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.valueDisplay { 
+  font-family: 'NinjaNaruto', sans-serif; font-size: 2rem; color: #ffcc00; 
+  text-shadow: 0 0 15px rgba(255, 204, 0, 0.2); 
+}
+
+.valueWrapper { display: flex; align-items: baseline; gap: 2px; }
+.unit { font-size: 1rem; color: #666; font-weight: 800; text-transform: uppercase; }
+
+/* --- INPUT NINJA (IGUAL ARMADURAS) --- */
+.inputNinja {
+  width: 70px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #333; /* Linha discreta para saber onde digitar */
+  
+  color: #ffcc00; /* Amarelo Ninja */
+  font-family: 'NinjaNaruto', sans-serif;
+  font-size: 2rem;
+  
+  text-align: right;
+  padding: 0;
+  line-height: 1;
+  transition: 0.3s;
+  text-shadow: 0 0 15px rgba(255, 204, 0, 0.2);
+}
+
+.inputNinja:focus {
+  outline: none;
+  border-bottom-color: #ffcc00;
+}
+
+/* Remove setinhas */
+.inputNinja::-webkit-outer-spin-button,
+.inputNinja::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.inputNinja[type=number] { -moz-appearance: textfield; }

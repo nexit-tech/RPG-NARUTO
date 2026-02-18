@@ -1,0 +1,55 @@
+.scrollButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 300px;
+  height: 200px;
+  background-color: var(--scroll-bg);
+  border: 4px solid var(--naruto-orange);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.scrollButton:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(255, 102, 0, 0.6);
+  background-color: #fff;
+}
+
+/* Efeito de "selo" nos cantos */
+.scrollButton::before, .scrollButton::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: var(--naruto-black);
+  border-radius: 50%;
+}
+.scrollButton::before { top: 10px; left: 10px; }
+.scrollButton::after { top: 10px; right: 10px; }
+
+.icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.text {
+  font-family: 'NinjaNaruto', sans-serif; /* Fallback se a fonte não carregar */
+  font-size: 1.5rem;
+  color: var(--naruto-black);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.subtext {
+  font-family: var(--font-montserrat);
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.5rem;
+}

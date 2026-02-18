@@ -1,0 +1,211 @@
+.container {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  background-color: #050505;
+  background-image: radial-gradient(circle at top right, #1a0a00 0%, #050505 40%);
+  color: #f0f0f0;
+  padding: 1.5rem 2rem;
+  font-family: var(--font-montserrat);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.pageTitle {
+  font-family: 'NinjaNaruto', sans-serif;
+  color: #ff6600;
+  font-size: 2rem;
+  text-transform: uppercase;
+  text-shadow: 0 0 15px rgba(255, 102, 0, 0.5);
+  letter-spacing: 1px;
+}
+
+.backLink {
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+.backLink:hover { color: #ff6600; }
+
+/* --- LAYOUT DE COLUNAS INDEPENDENTES --- */
+.dashboardGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* Coluna Esq (maior) e Coluna Dir (menor) */
+  gap: 1.2rem;
+  height: 100%;
+  padding-bottom: 1rem;
+}
+
+/* Coluna Esquerda */
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  height: 100%;
+}
+
+/* Coluna Direita */
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  height: 100%;
+}
+
+/* --- BLOCOS ESQUERDA --- */
+.activeSessionBlock {
+  flex: 1; /* Cresce para ocupar todo o espaço disponível */
+  background: linear-gradient(145deg, #0f0f0f, #070707);
+  border: 1px solid #222;
+  border-left: 5px solid #ff6600;
+  border-radius: 8px;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.activeSessionBlock:hover { border-color: #ff6600; }
+
+.strategyBlock {
+  height: 85px; /* Altura fixa e compacta */
+  flex-shrink: 0; /* Não encolhe */
+  background: linear-gradient(90deg, #141414, #0f0f0f);
+  border: 1px solid #222;
+  border-left: 5px solid #888;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  text-decoration: none;
+  color: inherit;
+  transition: 0.3s;
+}
+.strategyBlock:hover { border-color: #ff6600; border-left-color: #ff6600; }
+
+/* --- BLOCOS DIREITA --- */
+.sideCard {
+  flex: 1; /* Os 3 cards dividem a altura igualmente */
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  transition: 0.2s;
+  overflow: hidden;
+}
+.sideCard:hover { border-color: #ff6600; background: #151515; }
+
+/* --- ESTILOS INTERNOS --- */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid #222;
+  padding-bottom: 0.5rem;
+}
+
+.cardHeader h2 {
+  font-family: 'NinjaNaruto', sans-serif;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.icon { color: #ff6600; width: 20px; }
+
+.statusOnline {
+  margin-left: auto;
+  background: #ff0000;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+.sessionContent { 
+  flex: 1; 
+  overflow-y: auto; 
+  padding-right: 5px; 
+  display: flex;
+  flex-direction: column;
+}
+.sessionContent::-webkit-scrollbar { width: 4px; }
+.sessionContent::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+.sessionPlayerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.02);
+  padding: 0.8rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.playerMainInfo { display: flex; align-items: center; gap: 1rem; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #333; }
+.itemName { color: #eee; font-size: 1rem; }
+.itemMeta { color: #666; font-size: 0.75rem; text-transform: uppercase; }
+
+.combatBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+.inCombat { color: #ff4444; border: 1px solid #ff4444; background: rgba(255, 68, 68, 0.05); }
+.exploring { color: #44ff88; border: 1px solid #44ff88; background: rgba(68, 255, 136, 0.05); }
+
+.mainActionBtn {
+  margin-top: auto; /* Empurra pro fundo */
+  padding: 0.8rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed #444;
+  border-radius: 6px;
+  color: #888;
+  font-weight: 800;
+  text-align: center;
+  font-size: 0.8rem;
+  transition: 0.3s;
+}
+.mainActionBtn:hover { border-color: #ff6600; color: #ff6600; background: rgba(255, 102, 0, 0.05); }
+
+/* --- MINI LISTAS --- */
+.miniList { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; overflow-y: auto; }
+.miniItem { display: flex; align-items: center; gap: 0.8rem; background: #080808; padding: 0.5rem; border-radius: 4px; }
+.miniAvatar { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; }
+.miniName { font-weight: 600; color: #ddd; font-size: 0.85rem; }
+.miniMeta { font-size: 0.7rem; color: #555; }
+.moreLabel { font-size: 0.7rem; color: #444; text-align: center; margin-top: auto; font-weight: bold; padding-top: 5px; }
+
+.strategyHeader { display: flex; align-items: center; gap: 15px; }
+.strategyHeader h2 { font-family: 'NinjaNaruto', sans-serif; color: #fff; font-size: 1.1rem; }
+.cardDesc { color: #777; font-size: 0.85rem; margin-left: 10px; }
+.strategyArrow { font-size: 1.2rem; color: #333; }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }

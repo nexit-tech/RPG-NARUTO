@@ -1,0 +1,85 @@
+.container {
+  min-height: 100vh;
+  background-color: #050505;
+  background-image: radial-gradient(circle at 80% 20%, #1a0505 0%, #050505 50%);
+  color: #f0f0f0;
+  padding: 2rem 3rem;
+  font-family: var(--font-montserrat);
+}
+
+.header { margin-bottom: 3rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.headerTop { display: flex; justify-content: space-between; align-items: center; }
+
+.backLink {
+  color: #888; display: flex; align-items: center; gap: 0.5rem;
+  font-weight: 600; transition: 0.2s;
+}
+.backLink:hover { color: #ff4444; }
+
+.createBtn {
+  background: #ff4444; border: none; padding: 0.6rem 1.2rem; border-radius: 4px;
+  font-weight: bold; cursor: pointer; display: flex; gap: 8px; align-items: center;
+  font-family: 'NinjaNaruto', sans-serif; transition: 0.3s; color: #000;
+}
+.createBtn:hover { background: #ff6666; box-shadow: 0 0 15px rgba(255, 68, 68, 0.4); }
+
+.titleArea { text-align: center; }
+.pageTitle {
+  font-family: 'NinjaNaruto', sans-serif; color: #ff4444; font-size: 3rem;
+  margin-bottom: 0.5rem; text-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+}
+.subTitle { color: #666; font-size: 1rem; }
+
+/* FILTROS */
+.filterBar {
+  display: flex; justify-content: center; gap: 10px; align-items: center;
+  background: #111; padding: 10px; border-radius: 50px; width: fit-content; margin: 0 auto;
+  border: 1px solid #333;
+}
+.filterIcon { color: #666; margin-right: 10px; }
+
+.filterBtn {
+  background: transparent; border: none; color: #888; font-weight: 700;
+  padding: 5px 15px; border-radius: 20px; cursor: pointer; transition: 0.2s;
+}
+.filterBtn:hover { color: #fff; background: #222; }
+.filterBtn.active { background: #ff4444; color: #000; }
+
+/* GRID */
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2rem;
+}
+
+.card {
+  background: #0f0f0f; border: 1px solid #222; border-radius: 8px; overflow: hidden;
+  transition: all 0.3s; display: flex; flex-direction: column;
+}
+.card:hover { border-color: #ff4444; transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+
+.imageWrapper { position: relative; height: 180px; }
+.image { width: 100%; height: 100%; object-fit: cover; filter: sepia(20%) contrast(1.2); }
+
+.rankBadge {
+  position: absolute; top: 10px; right: 10px; padding: 2px 8px; border-radius: 4px;
+  font-size: 0.75rem; font-weight: 900; color: #000;
+}
+/* Cores por Rank */
+.rankS { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
+.rankA { background: #ff8800; }
+.rankB { background: #aa00ff; }
+.rankC { background: #00ccff; }
+.rankD { background: #888; }
+
+.content { padding: 1rem; flex: 1; border-bottom: 1px solid #222; }
+.name { color: #fff; font-family: 'NinjaNaruto', sans-serif; font-size: 1.1rem; margin-bottom: 0.5rem; }
+.meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: #888; }
+.hp { display: flex; align-items: center; gap: 4px; color: #ff4444; font-weight: 700; }
+
+.actions { display: flex; }
+.actionBtn {
+  flex: 1; background: #151515; border: none; padding: 10px; color: #666;
+  font-weight: 700; cursor: pointer; transition: 0.2s; border-right: 1px solid #222;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.actionBtn:last-child { border-right: none; }
+.actionBtn:hover { background: #222; color: #fff; }

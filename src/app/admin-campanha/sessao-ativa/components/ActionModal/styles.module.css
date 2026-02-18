@@ -1,0 +1,84 @@
+.overlay {
+  position: absolute; /* Fica dentro do container relativo pai (o mapa ou a tela) */
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+  background: #111;
+  border: 1px solid #333;
+  width: 320px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  transform: translateY(-20px);
+  animation: slideUp 0.2s ease-out forwards;
+}
+
+.header {
+  background: #1a1a1a;
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+}
+
+.header h3 {
+  font-family: 'NinjaNaruto', sans-serif;
+  color: #ff6600;
+  font-size: 1rem;
+  margin: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.closeBtn {
+  background: transparent; border: none; color: #666; cursor: pointer; transition: 0.2s;
+}
+.closeBtn:hover { color: #fff; }
+
+.content { padding: 20px; text-align: center; }
+
+.text { color: #ccc; font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5; }
+.text strong { color: #fff; }
+
+.actions { display: flex; gap: 10px; justify-content: center; }
+
+.btnMiss {
+  background: #333; color: #aaa; border: 1px solid #444;
+  padding: 10px 20px; border-radius: 4px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; font-weight: 700;
+}
+.btnMiss:hover { background: #444; color: #fff; }
+
+.btnHit {
+  background: #800; color: #fff; border: 1px solid #ff0000;
+  padding: 10px 20px; border-radius: 4px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; font-weight: 700;
+}
+.btnHit:hover { background: #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.4); }
+
+/* Input Área */
+.inputGroup { display: flex; gap: 10px; justify-content: center; }
+
+.numInput {
+  background: #080808; border: 1px solid #333; color: #fff;
+  font-size: 1.5rem; width: 100px; text-align: center;
+  border-radius: 4px; padding: 5px; font-family: 'NinjaNaruto', sans-serif;
+}
+.numInput:focus { outline: none; border-color: #ff6600; }
+
+.btnConfirm {
+  background: #ff6600; color: #000; border: none;
+  width: 45px; border-radius: 4px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.btnConfirm:hover { background: #ff8533; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { to { transform: translateY(0); } }

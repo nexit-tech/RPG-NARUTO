@@ -1,0 +1,191 @@
+/* --- LAYOUT PRINCIPAL (Fundo Preto Ninja) --- */
+.container {
+  min-height: 100vh;
+  /* Preto quase absoluto com um leve gradiente radial no topo */
+  background-color: #050505;
+  background-image: radial-gradient(circle at 50% -20%, #2a1000 0%, #050505 60%);
+  color: #f0f0f0;
+  padding: 3rem;
+  font-family: var(--font-montserrat);
+}
+
+/* --- HEADER DA PÁGINA --- */
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 3rem;
+  border-bottom: 1px solid #222; /* Linha sutil para não brigar com o preto */
+  padding-bottom: 1rem;
+}
+
+.pageTitle {
+  font-family: 'NinjaNaruto', sans-serif;
+  color: #ff6600;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  /* Glow laranja no texto */
+  text-shadow: 0 0 15px rgba(255, 102, 0, 0.5);
+}
+
+.subTitle {
+  color: #666;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+
+/* --- BOTÃO DE CRIAR (PRINCIPAL) --- */
+.createBtn {
+  background: linear-gradient(135deg, #ff6600, #cc5200);
+  color: #000;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  font-family: 'NinjaNaruto', sans-serif;
+  text-transform: uppercase;
+  font-size: 1rem;
+  box-shadow: 0 4px 10px rgba(255, 102, 0, 0.2);
+}
+
+.createBtn:hover {
+  background: #ff8533;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.6); /* Chakra explodindo */
+  transform: translateY(-2px);
+}
+
+/* --- LISTA DE CARDS --- */
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* =========================================
+   ESTILOS INTERNOS DO MODAL (FORMULÁRIOS)
+   ========================================= */
+
+.formGroup {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.formGroup label {
+  display: block;
+  color: #888;
+  margin-bottom: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: color 0.3s;
+}
+
+/* Efeito: Quando clica no input, o label fica laranja */
+.formGroup:focus-within label {
+  color: #ff6600;
+  text-shadow: 0 0 8px rgba(255, 102, 0, 0.4);
+}
+
+.input {
+  width: 100%;
+  padding: 1rem;
+  background-color: #080808; /* Fundo bem escuro para o input */
+  border: 1px solid #333;
+  color: #f0f0f0;
+  border-radius: 4px;
+  font-family: var(--font-montserrat);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.input::placeholder {
+  color: #444;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #ff6600;
+  background-color: #0a0a0a;
+  box-shadow: 0 0 15px rgba(255, 102, 0, 0.15); /* Glow sutil */
+}
+
+/* --- BOTÃO DE CONFIRMAR (DENTRO DO MODAL) --- */
+.submitBtn {
+  width: 100%;
+  padding: 1rem;
+  margin-top: 1rem;
+  background: linear-gradient(90deg, #ff6600, #ff4500);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  font-family: 'NinjaNaruto', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(255, 69, 0, 0.2);
+}
+
+.submitBtn:hover {
+  background: linear-gradient(90deg, #ff8533, #ff6600);
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(255, 69, 0, 0.5); /* Brilho intenso */
+}
+
+/* --- AÇÕES DE DELETE/CANCELAR --- */
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+  border-top: 1px solid #222;
+  padding-top: 1.5rem;
+}
+
+.cancelBtn {
+  padding: 0.8rem 1.5rem;
+  background: transparent;
+  border: 1px solid #444;
+  color: #aaa;
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: var(--font-montserrat);
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.cancelBtn:hover {
+  border-color: #fff;
+  color: #fff;
+  background: rgba(255,255,255,0.05);
+}
+
+.confirmDeleteBtn {
+  padding: 0.8rem 2rem;
+  background: #800; /* Vermelho escuro base */
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: bold;
+  font-family: var(--font-montserrat);
+  text-transform: uppercase;
+  transition: all 0.2s;
+  box-shadow: 0 0 10px rgba(136, 0, 0, 0.4);
+}
+
+.confirmDeleteBtn:hover {
+  background: #ff0000; /* Vermelho sangue vivo */
+  box-shadow: 0 0 25px rgba(255, 0, 0, 0.6);
+  transform: scale(1.05);
+}

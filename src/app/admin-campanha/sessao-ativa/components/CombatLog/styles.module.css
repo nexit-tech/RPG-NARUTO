@@ -1,0 +1,73 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(180deg, #0f0f0f 0%, #050505 100%);
+}
+
+.header {
+  color: #ff6600;
+  font-family: 'NinjaNaruto', sans-serif;
+  font-size: 1.1rem;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #222;
+  background: #080808;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  z-index: 2;
+}
+
+.logList {
+  flex: 1;
+  overflow-y: auto;
+  font-family: 'Courier New', Courier, monospace; /* Estilo Terminal */
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Espaço entre logs */
+  padding: 10px;
+}
+
+/* Scrollbar fina e moderna */
+.logList::-webkit-scrollbar { width: 5px; }
+.logList::-webkit-scrollbar-track { background: #000; }
+.logList::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+.logList::-webkit-scrollbar-thumb:hover { background: #ff6600; }
+
+.logItem {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  color: #ccc;
+  line-height: 1.4;
+  border-left: 3px solid #444; /* Default: Cinza */
+  transition: transform 0.2s, background 0.2s;
+  animation: slideIn 0.3s ease-out;
+}
+
+.logItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(3px);
+}
+
+/* Identificação Visual por Conteúdo (Isso requer lógica no componente para aplicar classes, 
+   mas como estamos usando apenas CSS aqui, vamos estilizar genericamente bonito e você pode adicionar classes dinâmicas depois se quiser) */
+
+/* Exemplo de como ficaria com classes dinâmicas: */
+/* .logAttack { border-left-color: #ff4444; background: rgba(255, 0, 0, 0.05); } */
+/* .logHeal { border-left-color: #00ff00; background: rgba(0, 255, 0, 0.05); } */
+
+.time { 
+  color: #666; 
+  font-size: 0.65rem; 
+  margin-right: 8px; 
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}

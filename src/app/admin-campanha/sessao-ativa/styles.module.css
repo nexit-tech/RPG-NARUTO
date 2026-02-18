@@ -1,0 +1,101 @@
+.layout {
+  height: 100vh; /* Altura fixa da viewport */
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #050505;
+  color: #fff;
+  overflow: hidden; /* Nada sai daqui */
+}
+
+.topBar {
+  height: 50px;
+  background: #000;
+  border-bottom: 2px solid #222; /* Borda mais definida */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  flex-shrink: 0;
+}
+
+.backLink {
+  color: #888; display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase; transition: 0.2s;
+}
+.backLink:hover { color: #ff6600; }
+
+.title {
+  font-family: 'NinjaNaruto', sans-serif; color: #ff0000; font-size: 1.5rem;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5); letter-spacing: 2px;
+}
+
+/* Área de Iniciativa */
+.areaInitiative {
+  height: 110px;
+  background: #0a0a0a;
+  border-bottom: 2px solid #ff6600; /* Separação forte do topo */
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+  margin-bottom: 10px; /* Pequeno gap vertical */
+}
+
+/* GRID PRINCIPAL */
+.mainGrid {
+  flex: 1; /* Ocupa todo o espaço restante */
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 15px;
+  padding: 15px;
+  overflow: hidden; /* Importante! */
+  min-height: 0; /* O segredo do Flex/Grid para não estourar */
+}
+
+/* BOX ESQUERDA (Controles) */
+.areaControls {
+  background: #080808;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex; flex-direction: column;
+  overflow-y: auto; /* Scroll se os controles forem muitos */
+}
+
+/* COLUNA CENTRAL (Agrupa Mapa e Painel Inferior) */
+.centerCol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden; /* Importante */
+  border-radius: 8px;
+  position: relative;
+  min-height: 0;
+}
+
+/* O Mapa ocupa o espaço que sobrar da coluna central */
+.areaMap {
+  flex: 1; /* Cresce o máximo possível */
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; /* Imagem não vaza */
+  background: #000;
+  border: 2px solid #333; /* Borda padrão */
+  transition: border-color 0.3s;
+}
+
+/* BOX DIREITA (Logs) */
+.areaLog {
+  background: #080808;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0; /* Padding zero para o header colar */
+  display: flex; flex-direction: column;
+  overflow: hidden; /* Trava o tamanho */
+  min-height: 0;
+}
+
+/* Bordas de Estado */
+.modeAttack { border-color: #ff0000; box-shadow: 0 0 20px rgba(255, 0, 0, 0.2) inset; }
+.modeHeal { border-color: #00ff00; box-shadow: 0 0 20px rgba(0, 255, 0, 0.2) inset; }
+.modeAoE { border-color: #00ccff; box-shadow: 0 0 20px rgba(0, 204, 255, 0.2) inset; }

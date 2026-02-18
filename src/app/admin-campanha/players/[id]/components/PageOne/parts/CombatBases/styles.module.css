@@ -1,0 +1,24 @@
+.card {
+  background: #0a0a0a; border: 1px solid #222; border-radius: 8px;
+  display: flex; flex-direction: column; height: 100%;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden;
+}
+.header { padding: 1rem; border-bottom: 1px solid #222; background: #050505; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.header span { font-family: 'NinjaNaruto', sans-serif; color: #ff6600; font-size: 1.1rem; letter-spacing: 1px; }
+
+.list { display: flex; flex-direction: column; justify-content: space-between; flex: 1; padding: 0.5rem 0; }
+.item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1.5rem; border-bottom: 1px solid #151515; transition: background 0.2s; }
+.item:last-child { border-bottom: none; }
+.item:hover { background: rgba(255, 102, 0, 0.05); }
+
+.info { display: flex; flex-direction: column; gap: 4px; }
+.label { color: #ddd; font-family: 'NinjaNaruto', sans-serif; font-size: 0.9rem; letter-spacing: 0.5px; }
+
+.formula { color: #666; font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.valueDisplay { font-family: 'NinjaNaruto', sans-serif; font-size: 1.8rem; color: #ff6600; text-shadow: 0 0 15px rgba(255, 102, 0, 0.2); }
+
+/* Edit Styles */
+.formulaContainer { display: flex; align-items: center; gap: 4px; color: #666; font-size: 0.8rem; }
+.miniInput { width: 35px; background: #222; border: 1px solid #444; color: #fff; text-align: center; border-radius: 4px; padding: 2px; font-size: 0.7rem; }
+.miniInput:focus { border-color: #ff6600; outline: none; }

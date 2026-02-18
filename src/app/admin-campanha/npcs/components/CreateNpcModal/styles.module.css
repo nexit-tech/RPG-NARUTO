@@ -1,0 +1,40 @@
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+  background: #111; border: 1px solid #ff6600; width: 400px; border-radius: 8px;
+  overflow: hidden; box-shadow: 0 0 30px rgba(255, 102, 0, 0.2);
+}
+
+.header {
+  padding: 15px; background: #1a1a1a; border-bottom: 1px solid #333;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.header h3 { color: #ff6600; font-family: 'NinjaNaruto', sans-serif; margin: 0; display: flex; gap: 8px; }
+.closeBtn { background: transparent; border: none; color: #666; cursor: pointer; }
+.closeBtn:hover { color: #fff; }
+
+.form { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+
+.form label { color: #888; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+.input {
+  background: #080808; border: 1px solid #333; color: #fff; padding: 12px;
+  border-radius: 4px; font-size: 1.1rem; font-family: 'NinjaNaruto', sans-serif;
+  color: #ff6600;
+}
+.input:focus { outline: none; border-color: #ff6600; background: #000; }
+
+.footer { display: flex; gap: 10px; margin-top: 10px; }
+.cancelBtn { flex: 1; padding: 10px; background: transparent; border: 1px solid #333; color: #888; cursor: pointer; border-radius: 4px; }
+.cancelBtn:hover { border-color: #666; color: #fff; }
+
+.createBtn {
+  flex: 2; padding: 10px; background: #ff6600; color: #000; border: none; cursor: pointer;
+  border-radius: 4px; font-weight: 800; font-family: var(--font-montserrat);
+}
+.createBtn:hover { background: #ff8533; box-shadow: 0 0 15px rgba(255, 102, 0, 0.4); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

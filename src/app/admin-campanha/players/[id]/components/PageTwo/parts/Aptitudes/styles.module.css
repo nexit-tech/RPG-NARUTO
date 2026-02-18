@@ -1,0 +1,40 @@
+.card {
+  background: #0a0a0a; border: 2px solid #fff; border-radius: 8px; overflow: hidden;
+}
+.header {
+  background: #fff; padding: 8px; border-bottom: 2px solid #000;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.header span {
+  font-family: 'NinjaNaruto', sans-serif; color: #000; font-size: 1.2rem;
+}
+
+.gridHeader {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr 60px 1fr 60px; /* 3 pares de colunas */
+  background: #fff;
+  border-bottom: 1px solid #000;
+}
+
+.col {
+  font-size: 0.6rem; font-weight: 800; text-align: center; padding: 4px; border-right: 1px solid #000; color: #000;
+}
+
+.gridBody {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr 60px 1fr 60px;
+  background: #0a0a0a;
+}
+
+.cellName {
+  border-right: 1px solid #333; border-bottom: 1px solid #333; padding: 8px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.cellCost {
+  border-right: 1px solid #333; border-bottom: 1px solid #333;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'NinjaNaruto', sans-serif; color: #ff6600; font-size: 1.2rem;
+}
+
+.aptName { color: #fff; font-weight: 700; font-size: 0.8rem; }
+.aptNv { color: #888; font-size: 0.6rem; font-weight: 800; }
