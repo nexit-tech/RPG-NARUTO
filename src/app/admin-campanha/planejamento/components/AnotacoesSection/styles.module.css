@@ -1,0 +1,236 @@
+/* ── SHARED ─────────────────────────────────────── */
+.section { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.sectionTitle {
+  font-family: 'NinjaNaruto', sans-serif;
+  color: #fff;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sectionTitle svg { color: #ff6600; }
+
+.addBtn {
+  background: #ff6600;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  color: #000;
+  font-weight: 800;
+  font-family: 'NinjaNaruto', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.2s;
+}
+.addBtn:hover { background: #ff8533; box-shadow: 0 0 15px rgba(255,102,0,0.4); }
+
+/* ── FORM ───────────────────────────────────────── */
+.formCard {
+  background: #0f0f0f;
+  border: 1px solid #333;
+  border-left: 3px solid #ff6600;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.formGroup { display: flex; flex-direction: column; gap: 6px; }
+.formGroup label {
+  font-size: 0.7rem;
+  color: #666;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.input {
+  background: #080808;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  color: #eee;
+  padding: 0.7rem 1rem;
+  font-family: var(--font-montserrat);
+  font-size: 0.9rem;
+  transition: 0.2s;
+}
+.input:focus { outline: none; border-color: #ff6600; background: #050505; }
+
+.textarea {
+  background: #080808;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  color: #eee;
+  padding: 0.7rem 1rem;
+  font-family: var(--font-montserrat);
+  font-size: 0.9rem;
+  resize: vertical;
+  transition: 0.2s;
+}
+.textarea:focus { outline: none; border-color: #ff6600; background: #050505; }
+
+.formActions { display: flex; gap: 10px; justify-content: flex-end; }
+
+.cancelBtn {
+  background: transparent;
+  border: 1px solid #333;
+  color: #888;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.cancelBtn:hover { border-color: #666; color: #fff; }
+
+.confirmBtn {
+  background: #ff6600;
+  border: none;
+  color: #000;
+  padding: 8px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 800;
+  font-family: 'NinjaNaruto', sans-serif;
+  transition: 0.2s;
+}
+.confirmBtn:hover { background: #ff8533; }
+
+/* ── COLOR PICKER ───────────────────────────────── */
+.colorPicker { display: flex; gap: 8px; }
+.colorBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.colorBtn:hover { transform: scale(1.2); }
+.colorSelected { border-width: 3px; transform: scale(1.15); }
+
+/* ── NOTES GRID ─────────────────────────────────── */
+.notesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.noteCard {
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  min-height: 180px;
+  transition: 0.2s;
+}
+.noteCard:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+
+.noteHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.noteTitle {
+  font-family: 'NinjaNaruto', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+}
+
+.noteContent {
+  color: #aaa;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  flex: 1;
+  white-space: pre-wrap;
+}
+
+.noteDate {
+  font-size: 0.65rem;
+  color: #444;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.noteActions { display: flex; gap: 4px; flex-shrink: 0; }
+
+.actionBtn {
+  background: transparent;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+}
+.actionBtn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+
+.noteEditTitle {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-family: 'NinjaNaruto', sans-serif;
+  font-size: 1rem;
+  padding: 4px 8px;
+  flex: 1;
+}
+.noteEditTitle:focus { outline: none; border-color: #ff6600; }
+
+.noteEditContent {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #aaa;
+  font-family: var(--font-montserrat);
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  resize: vertical;
+  line-height: 1.6;
+}
+.noteEditContent:focus { outline: none; border-color: #ff6600; }
+
+/* ── EMPTY STATE ────────────────────────────────── */
+.emptyState {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem;
+  color: #333;
+  text-align: center;
+}
+.emptyState p {
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}

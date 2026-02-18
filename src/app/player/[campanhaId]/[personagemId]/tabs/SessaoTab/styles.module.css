@@ -1,0 +1,70 @@
+/* Idêntico ao sessao-ativa/styles.module.css */
+
+.layout {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #050505;
+  color: #fff;
+  overflow: hidden;
+}
+
+.areaInitiative {
+  height: 110px;
+  background: #0a0a0a;
+  border-bottom: 2px solid #ff6600;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.mainGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 15px;
+  padding: 15px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.areaControls {
+  background: #080808;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+
+.centerCol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  border-radius: 8px;
+  position: relative;
+  min-height: 0;
+}
+
+.areaMap {
+  flex: 1;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  background: #000;
+  border: 2px solid #333;
+  transition: border-color 0.3s;
+}
+
+.areaLog {
+  background: #080808;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}

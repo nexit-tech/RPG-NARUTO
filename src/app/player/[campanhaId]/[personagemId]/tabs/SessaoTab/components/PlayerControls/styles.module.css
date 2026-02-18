@@ -1,0 +1,95 @@
+/* Idêntico ao DmControls/styles.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1rem;
+}
+
+.header {
+  color: #ff6600;
+  font-family: 'NinjaNaruto', sans-serif;
+  font-size: 1.1rem;
+  border-bottom: 2px solid #333;
+  padding-bottom: 0.5rem;
+  display: flex; align-items: center; gap: 8px;
+  letter-spacing: 1px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.group label {
+  color: #555;
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-left: 2px;
+}
+
+.verticalActions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+
+.btn {
+  background: #111;
+  border: 1px solid #333;
+  color: #ccc;
+  padding: 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-montserrat);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: #ff6600;
+  color: #fff;
+  background: #1f1f1f;
+  transform: translateX(2px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.active {
+  background: #ff6600; color: #000; border-color: #ff6600;
+  box-shadow: 0 0 10px rgba(255, 102, 0, 0.4);
+}
+
+.activeAttack { background: rgba(220, 20, 60, 0.2); border-color: #dc143c; color: #dc143c; }
+.activeHeal   { background: rgba(0, 255, 127, 0.2); border-color: #00ff7f; color: #00ff7f; }
+
+.combatOn {
+  background: #330000; border-color: #ff0000; color: #ff4444;
+  cursor: not-allowed;
+}
+.combatOff {
+  background: #111; border-color: #333; color: #555;
+  cursor: not-allowed;
+}
+
+.iconBtn {
+  background: #111; border: 1px solid #333; color: #666;
+  padding: 0.6rem; border-radius: 4px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: 0.2s;
+}
+.iconBtn:hover { color: #fff; border-color: #00ccff; }
+.activeAoE { background: rgba(0, 204, 255, 0.2); border-color: #00ccff; color: #00ccff; }
