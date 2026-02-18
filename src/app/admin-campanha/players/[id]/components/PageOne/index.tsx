@@ -80,6 +80,7 @@ export default function PageOne({ data }: { data: any }) {
         
         <CombatBases 
           data={localData.bases} 
+          attributes={localData.attributes} // Passando os atributos para a base
           isEditing={isEditing}
           onChange={(d: any) => updateSection('bases', d)}
         />
@@ -96,6 +97,7 @@ export default function PageOne({ data }: { data: any }) {
         <div className={styles.span2}>
           <Skills 
             data={localData.skills} 
+            attributes={localData.attributes} // Passando atributos para as perícias!
             isEditing={isEditing}
             onChange={(d: any) => updateSection('skills', d)}
           />

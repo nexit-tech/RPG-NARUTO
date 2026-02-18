@@ -1,116 +1,119 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Skull, Shield, Sword, Scroll, Target, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import styles from './styles.module.css';
 
-// Mock Data para o NPC (Simulando um fetch pelo ID)
-const NPC_DATA = {
-  id: 101,
-  name: 'Kakashi Hatake',
-  epithet: 'O Ninja Copiador',
-  village: 'Konoha',
-  rank: 'Hokage / Rank S',
-  status: 'Aliado', // ou 'Inimigo' / 'Procurado'
-  bounty: 0, // Se for inimigo, tem recompensa
-  img: 'https://imgs.search.brave.com/EGIZ5oD2mBtZXBrZ10deMReBz4i7m7d4UFKtcrv98Oo/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMud2lraWEubm9j/b29raWUubmV0L3Bf/Xy9pbWFnZXMvNi82/ZS9LYWthc2hpX2lu/Zm9ib3hfaW1hZ2Uu/cG5nL3JldmlzaW9u/L2xhdGVzdC9zY2Fs/ZS10by13aWR0aC1k/b3duLzI2OD9jYj0y/MDE4MDQxNzIzNTEz/NCZwYXRoLXByZWZp/eD1wcm90YWdvbmlz/dA',
-  stats: { hp: 450, cp: 600, def: 22, esq: 30 },
-  traits: [
-    'Mestre do Sharingan (Copia Jutsus)',
-    'Estrategista Nato (INT +5)',
-    'Raiton Especialista'
+// Importando os componentes diretos da pasta de Players (O reaproveitamento genial!)
+import SheetHeader from '../../players/[id]/components/SheetHeader';
+import PageOne from '../../players/[id]/components/PageOne';
+import PageTwo from '../../players/[id]/components/PageTwo';
+import PageThree from '../../players/[id]/components/PageThree';
+
+// MOLDE COMPLETO (Agora com as Perícias preenchidas para não ficar em branco!)
+const BLANK_NPC_DATA = {
+  info: { 
+    name: "Novo NPC", clan: "Sem Clã", img: "https://via.placeholder.com/140",
+    shinobiLevel: 1, campaignLevel: 1, age: 20, gender: "Indefinido",
+    originVillage: "-", activeVillage: "-", alignment: "-", heightWeight: "-"
+  },
+  attributes: { for: 0, des: 0, con: 0, int: 0, per: 0, car: 0 },
+  combatStats: {
+    hp: { base: 10, other: 0 },
+    cp: { base: 10, other: 0 },
+    st: { base: 10, other: 0 }
+  },
+  defenses: {
+    ca: { armor: 0, bonus: 0 },
+    bloqueio: { base: 0, other: 0 }
+  },
+  bases: {
+    cc: { base: 0, other: 0, attrKey: 'for' },
+    cd: { base: 0, other: 0, attrKey: 'des' },
+    esquiva: { base: 0, other: 0, attrKey: 'agi' },
+    lim: { base: 0, other: 0, attrKey: 'per' }
+  },
+  social: [
+    { name: 'Intimidação', pontos: 0, other: 0, attrKey: 'car' },
+    { name: 'Persuasão', pontos: 0, other: 0, attrKey: 'car' }
   ],
-  lore: 'Sexto Hokage de Konoha. Famoso por ter copiado mais de mil jutsus. Atualmente atua como conselheiro e líder estratégico.',
-  jutsus: ['Raikiri', 'Kamui', 'Parede de Terra', 'Clone das Sombras']
+  // Array de Perícias agora preenchido para aparecer na tela! (Pode ajustar os nomes se usar outros)
+  skills: [
+    { name: 'Acrobacia', pontos: 0, attr: 'DES', other: 0 },
+    { name: 'Atletismo', pontos: 0, attr: 'FOR', other: 0 },
+    { name: 'Conhecimento', pontos: 0, attr: 'INT', other: 0 },
+    { name: 'Furtividade', pontos: 0, attr: 'DES', other: 0 },
+    { name: 'Iniciativa', pontos: 0, attr: 'DES', other: 0 },
+    { name: 'Intuição', pontos: 0, attr: 'PER', other: 0 },
+    { name: 'Investigação', pontos: 0, attr: 'INT', other: 0 },
+    { name: 'Medicina', pontos: 0, attr: 'INT', other: 0 },
+    { name: 'Percepção', pontos: 0, attr: 'PER', other: 0 },
+    { name: 'Sobrevivência', pontos: 0, attr: 'PER', other: 0 }
+  ],
+  inventory: [],
+  powers: [],
+  economy: { ryos: 0, ppTotal: 0, ppGastos: 0, comp: '0 / 0' },
+  aptitudes: [],
+  attacks: [],
+  jutsus: []
 };
 
-export default function NpcProfilePage({ params }: { params: { id: string } }) {
-  // Em produção: const npc = fetchNpc(params.id);
-  const npc = NPC_DATA; 
-  const isEnemy = npc.status === 'Inimigo' || npc.status === 'Procurado';
+export default function NpcSheetPage() {
+  const router = useRouter();
+  
+  const [npcData, setNpcData] = useState<any>(BLANK_NPC_DATA);
+  const [activeTab, setActiveTab] = useState(1);
+
+  const handleDataChange = (newData: any) => {
+    setNpcData(newData);
+  };
+
+  // Função auxiliar para deixar o menu de abas elegante
+  const getTabStyle = (tabNumber: number) => ({
+    flex: 1,
+    padding: '12px 20px',
+    background: activeTab === tabNumber ? '#ff6600' : '#111',
+    color: activeTab === tabNumber ? '#000' : '#888',
+    border: '1px solid #333',
+    borderBottom: activeTab === tabNumber ? 'none' : '1px solid #333',
+    borderRadius: '8px 8px 0 0',
+    fontWeight: 900,
+    fontSize: '0.9rem',
+    cursor: 'pointer',
+    letterSpacing: '1px',
+    textTransform: 'uppercase' as const,
+    transition: 'all 0.2s ease-in-out',
+  });
 
   return (
-    <main className={styles.container}>
-      <nav className={styles.topNav}>
-        <Link href="/admin-campanha/npcs" className={styles.backLink}>
-          <ArrowLeft size={18} /> Voltar para Bingo Book
-        </Link>
-        <span className={`${styles.statusBadge} ${isEnemy ? styles.enemy : styles.ally}`}>
-          {npc.status.toUpperCase()}
-        </span>
-      </nav>
+    <div className={styles.container || ''} style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      
+      {/* Botão de Voltar */}
+      <button 
+        onClick={() => router.push('/admin-campanha/npcs')}
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: '#ff6600', cursor: 'pointer', marginBottom: '1.5rem', fontWeight: 'bold' }}
+      >
+        <ArrowLeft size={20} /> VOLTAR PARA BINGO BOOK
+      </button>
 
-      <div className={styles.contentGrid}>
-        {/* COLUNA ESQUERDA: FOTO E STATUS BÁSICO */}
-        <aside className={styles.profileCard}>
-          <div className={styles.imageWrapper}>
-            <img src={npc.img} alt={npc.name} className={styles.avatar} />
-            {isEnemy && <div className={styles.wantedStamp}>WANTED</div>}
-          </div>
-          
-          <h1 className={styles.name}>{npc.name}</h1>
-          <h2 className={styles.epithet}>"{npc.epithet}"</h2>
-          
-          <div className={styles.villageInfo}>
-            <img src="/src/app/favicon.ico" alt="Vila" width={20} style={{opacity:0.5}}/> {/* Placeholder icone vila */}
-            <span>{npc.village}</span>
-          </div>
+      {/* CABEÇALHO */}
+      <SheetHeader data={npcData} onChange={handleDataChange} />
 
-          <div className={styles.statsBlock}>
-            <div className={styles.statRow}>
-              <div className={styles.statLabel}><Target size={14}/> HP</div>
-              <div className={styles.statValue} style={{color: '#ff4444'}}>{npc.stats.hp}</div>
-            </div>
-            <div className={styles.statRow}>
-              <div className={styles.statLabel}><Scroll size={14}/> CP</div>
-              <div className={styles.statValue} style={{color: '#00ccff'}}>{npc.stats.cp}</div>
-            </div>
-            <div className={styles.statRow}>
-              <div className={styles.statLabel}><Shield size={14}/> DEF</div>
-              <div className={styles.statValue}>{npc.stats.def}</div>
-            </div>
-          </div>
-
-          {isEnemy && (
-            <div className={styles.bountyBox}>
-              <label>RECOMPENSA</label>
-              <span>¥ {npc.bounty.toLocaleString()}</span>
-            </div>
-          )}
-        </aside>
-
-        {/* COLUNA DIREITA: DETALHES TÁTICOS */}
-        <section className={styles.detailsArea}>
-          
-          {/* TRAÇOS E COMPORTAMENTO */}
-          <div className={styles.panel}>
-            <h3 className={styles.panelTitle}><AlertTriangle size={18}/> HABILIDADES & TRAÇOS</h3>
-            <ul className={styles.traitList}>
-              {npc.traits.map((trait, i) => (
-                <li key={i}>{trait}</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* JUTSUS CONHECIDOS */}
-          <div className={styles.panel}>
-            <h3 className={styles.panelTitle}><Sword size={18}/> ARSENAL DE JUTSUS</h3>
-            <div className={styles.jutsuTags}>
-              {npc.jutsus.map((jutsu, i) => (
-                <span key={i} className={styles.jutsuTag}>{jutsu}</span>
-              ))}
-            </div>
-          </div>
-
-          {/* LORE / HISTÓRICO */}
-          <div className={styles.panel}>
-            <h3 className={styles.panelTitle}><Scroll size={18}/> ARQUIVO CONFIDENCIAL</h3>
-            <p className={styles.loreText}>{npc.lore}</p>
-          </div>
-
-        </section>
+      {/* SELETOR DE ABAS (Estilo Ninja Naruto) */}
+      <div style={{ display: 'flex', gap: '4px', marginTop: '2rem', borderBottom: '2px solid #ff6600' }}>
+        <button style={getTabStyle(1)} onClick={() => setActiveTab(1)}>STATUS</button>
+        <button style={getTabStyle(2)} onClick={() => setActiveTab(2)}>TÉCNICA</button>
+        <button style={getTabStyle(3)} onClick={() => setActiveTab(3)}>GRIMÓRIO</button>
       </div>
-    </main>
+
+      {/* ÁREA DA PÁGINA */}
+      <div style={{ background: '#0a0a0a', padding: '2rem 1rem', border: '1px solid #333', borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
+        {activeTab === 1 && <PageOne data={npcData} onChange={handleDataChange} />}
+        {activeTab === 2 && <PageTwo data={npcData} onChange={handleDataChange} />}
+        {activeTab === 3 && <PageThree data={npcData} onChange={handleDataChange} />}
+      </div>
+
+    </div>
   );
 }
