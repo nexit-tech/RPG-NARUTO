@@ -1,144 +1,456 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Scroll, Users, ChevronRight, Search, Shield, Loader2 } from 'lucide-react';
-import styles from './styles.module.css';
+import { ArrowLeft, Plus, Loader2, Swords, Users, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import styles from './styles.module.css';
 
 interface Campanha {
   id: string;
   nome: string;
   descricao: string;
   mestre: string;
-  jogadores: number;
-  status: 'ativa' | 'pausada' | 'encerrada';
-  banner: string;
+  rank: string;
+  nivel: number;
+  status: string;
+  banner_url: string;
 }
 
-const STATUS_LABEL = { ativa: 'Em andamento', pausada: 'Pausada', encerrada: 'Encerrada' };
-const STATUS_CLASS = { ativa: styles.statusAtiva, pausada: styles.statusPausada, encerrada: styles.statusEncerrada };
+interface Personagem {
+  id: string;
+  nome: string;
+  class: string;
+  level: number;
+  img: string;
+  hp: number;
+  max_hp: number;
+  cp: number;
+  max_cp: number;
+  user_id?: string;
+}
 
-export default function PlayerPage() {
-  const [search, setSearch] = useState('');
-  const [campanhas, setCampanhas] = useState<Campanha[]>([]);
+export default function PlayerLobbyPage({ params }: { params: Promise<{ campanhaId: string }> }) {
+  const router = useRouter();
+  
+  const resolvedParams = use(params);
+  const campanhaId = resolvedParams.campanhaId;
+
+  // Guarda o usuário autenticado
+  const [currentUser, setCurrentUser] = useState<any>(null); 
+  const [campanha, setCampanha] = useState<Campanha | null>(null);
+  const [personagens, setPersonagens] = useState<Personagem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCampanhas();
-  }, []);
+  const [isCreating, setIsCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [enteringId, setEnteringId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ nome: '', class: '', img: '' });
 
-  async function fetchCampanhas() {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [charToDelete, setCharToDelete] = useState<Personagem | null>(null);
+
+  useEffect(() => {
+    if (campanhaId) {
+      fetchData();
+    }
+  }, [campanhaId]);
+
+  async function fetchData() {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from('campanhas')
-      .select('id, nome, descricao, mestre, jogadores, status, banner_url')
-      .order('created_at', { ascending: false });
+    try {
+      // 1. Pega o usuário logado com máxima segurança
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error("Erro de Autenticação:", authError);
+        router.push('/login');
+        return;
+      }
+      
+      console.log("✅ Usuário logado detectado:", user.id);
+      setCurrentUser(user);
 
-    if (error) {
-      console.error('Erro ao buscar campanhas:', error);
-    } else {
-      const mapped: Campanha[] = (data ?? []).map((row) => ({
-        id: row.id,
-        nome: row.nome,
-        descricao: row.descricao ?? '',
-        mestre: row.mestre ?? 'Sensei',
-        jogadores: row.jogadores ?? 0,
-        status: row.status ?? 'ativa',
-        banner: row.banner_url ?? 'https://images7.alphacoders.com/611/611138.png',
-      }));
-      setCampanhas(mapped);
+      // 2. Busca os dados da campanha e as fichas DO USUÁRIO
+      const [campReq, charsReq] = await Promise.all([
+        supabase.from('campanhas').select('*').eq('id', campanhaId).limit(1).single(),
+        supabase.from('personagens')
+          .select('*')
+          .eq('campanha_id', campanhaId)
+          .eq('user_id', user.id) // O filtro rigoroso
+      ]);
+
+      if (campReq.error || !campReq.data) {
+        console.error('Campanha não encontrada', campReq.error);
+        router.push('/player');
+        return;
+      }
+
+      setCampanha(campReq.data);
+      setPersonagens(charsReq.data || []);
+    } catch (err) {
+      console.error("Erro no fetchData:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
-  const filtered = campanhas.filter((c) =>
-    c.nome.toLowerCase().includes(search.toLowerCase()) ||
-    c.mestre.toLowerCase().includes(search.toLowerCase())
-  );
+  function openEditModal(char: Personagem) {
+    setFormData({ nome: char.nome, class: char.class, img: char.img });
+    setEditingId(char.id);
+    setIsCreating(true);
+  }
+
+  function closeFormModal() {
+    setIsCreating(false);
+    setEditingId(null);
+    setFormData({ nome: '', class: '', img: '' });
+  }
+
+  async function handleSaveCharacter() {
+    if (!formData.nome.trim()) return;
+    
+    // Verificação de segurança tripla
+    if (!currentUser || !currentUser.id) {
+      alert("Erro crítico: Sistema perdeu seu login. Recarregue a página.");
+      return;
+    }
+
+    setSaving(true);
+    const finalImg = formData.img || 'https://via.placeholder.com/150?text=Sem+Foto';
+
+    try {
+      if (editingId) {
+        // --- MODO EDIÇÃO ---
+        const { data, error } = await supabase
+          .from('personagens')
+          .update({
+            nome: formData.nome,
+            class: formData.class || 'Ninja em Treinamento',
+            img: finalImg,
+          })
+          .eq('id', editingId)
+          .eq('user_id', currentUser.id) // Garante que é dono da ficha
+          .select('*')
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setPersonagens(personagens.map(p => p.id === editingId ? data : p));
+          closeFormModal();
+        }
+
+      } else {
+        // --- MODO CRIAÇÃO ---
+        const novoPersonagem = {
+          campanha_id: campanhaId,
+          user_id: currentUser.id, // INJEÇÃO DIRETA DO ID AQUI
+          nome: formData.nome,
+          class: formData.class || 'Ninja em Treinamento',
+          img: finalImg,
+          level: 1,
+          hp: 100,
+          max_hp: 100,
+          cp: 100,
+          max_cp: 100,
+          atk: 10,
+          def: 10,
+          esq: 10,
+          cd: 10,
+          in_combat: false,
+          is_down: false,
+        };
+
+        console.log("🚀 Enviando para o Supabase:", novoPersonagem);
+
+        const { data, error } = await supabase
+          .from('personagens')
+          .insert([novoPersonagem])
+          .select('*')
+          .single();
+
+        if (error) {
+          console.error('❌ Erro retornado do Supabase ao criar:', error);
+          alert("Falha ao salvar. Verifique o console.");
+        } else if (data) {
+          console.log("✅ Criado com sucesso no banco:", data);
+          setPersonagens([...personagens, data]);
+          closeFormModal();
+          
+          // Tenta atualizar o contador de jogadores na campanha
+          const { error: rpcError } = await supabase.rpc('increment_jogadores', { camp_id: campanhaId });
+          if (rpcError) {
+            await supabase.from('campanhas').update({ jogadores: personagens.length + 1 }).eq('id', campanhaId);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("❌ Erro fatal no handleSaveCharacter:", err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!charToDelete || !currentUser) return;
+    setSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from('personagens')
+        .delete()
+        .eq('id', charToDelete.id)
+        .eq('user_id', currentUser.id);
+
+      if (error) throw error;
+
+      setPersonagens(personagens.filter(p => p.id !== charToDelete.id));
+      setCharToDelete(null);
+
+      const { error: rpcError } = await supabase.rpc('decrement_jogadores', { camp_id: campanhaId });
+      if (rpcError) {
+         await supabase.from('campanhas').update({ jogadores: Math.max(0, personagens.length - 1) }).eq('id', campanhaId);
+      }
+    } catch (err) {
+      console.error('Erro ao excluir personagem:', err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function enterSession(personagemId: string) {
+    setEnteringId(personagemId);
+
+    try {
+      const { data: sessao } = await supabase
+        .from('sessoes')
+        .select('id')
+        .eq('campanha_id', campanhaId)
+        .limit(1)
+        .maybeSingle();
+
+      if (sessao) {
+        const { data: tokenExistente } = await supabase
+          .from('sessao_tokens')
+          .select('id')
+          .eq('sessao_id', sessao.id)
+          .eq('personagem_id', personagemId)
+          .limit(1)
+          .maybeSingle();
+
+        if (!tokenExistente) {
+          const char = personagens.find(p => p.id === personagemId);
+          if (char) {
+            const finalImg = char.img.startsWith('blob:') 
+              ? 'https://via.placeholder.com/150?text=Sem+Foto' 
+              : char.img;
+
+            await supabase.from('sessao_tokens').insert({
+              sessao_id: sessao.id,
+              personagem_id: char.id,
+              token_type: 'player',
+              nome: char.nome,
+              img: finalImg,
+              hp: char.hp,
+              max_hp: char.max_hp,
+              cp: char.cp,
+              max_cp: char.max_cp,
+              level: char.level,
+              class: char.class,
+              map_x: 0, 
+              map_y: 0,
+              in_combat: false
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("☠️ Erro inesperado ao entrar na sessão:", err);
+    } finally {
+      router.push(`/player/${campanhaId}/${personagemId}`);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className={styles.loadingScreen}>
+        <Loader2 size={40} className={styles.spinner} />
+        <span>Sincronizando chakra...</span>
+      </div>
+    );
+  }
+
+  if (!campanha) return null;
 
   return (
     <main className={styles.container}>
-      {/* HEADER */}
-      <header className={styles.header}>
-        <div className={styles.logo}>
-          <Shield size={28} className={styles.logoIcon} />
-          <div>
-            <h1 className={styles.logoTitle}>Portal do Ninja</h1>
-            <p className={styles.logoSub}>Escolha sua campanha</p>
+      <div className={styles.hero}>
+        {campanha.banner_url && (
+          <img src={campanha.banner_url} alt={campanha.nome} className={styles.heroBg} />
+        )}
+        <div className={styles.heroOverlay} />
+        
+        <div className={styles.heroContent}>
+          <Link href="/player" className={styles.backLink}>
+            <ArrowLeft size={18} /> Voltar para Campanhas
+          </Link>
+          <h1 className={styles.heroTitle}>{campanha.nome}</h1>
+          
+          <div className={styles.heroMeta} style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginTop: '1rem' }}>
+            <span>Mestre: <strong style={{color: '#fff'}}>{campanha.mestre || 'Desconhecido'}</strong></span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff6600', fontWeight: 'bold' }}>
+              <Users size={18} /> Sua Equipe
+            </span>
           </div>
         </div>
-      </header>
-
-      {/* SEARCH */}
-      <div className={styles.searchBar}>
-        <Search size={18} className={styles.searchIcon} />
-        <input
-          className={styles.searchInput}
-          placeholder="Buscar campanha ou mestre..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
       </div>
 
-      {/* GRID */}
-      <div className={styles.grid}>
-        {loading ? (
-          <div className={styles.emptyState}>
-            <Loader2 size={32} style={{ animation: 'spin 0.8s linear infinite', color: '#ff6600' }} />
-            <p>Carregando campanhas...</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Scroll size={40} />
-            <p>Nenhuma campanha encontrada</p>
-          </div>
-        ) : (
-          filtered.map((campanha) => (
-            <Link
-              key={campanha.id}
-              href={campanha.status !== 'encerrada' ? `/player/${campanha.id}` : '#'}
-              className={`${styles.card} ${campanha.status === 'encerrada' ? styles.cardDisabled : ''}`}
-            >
-              {/* BANNER */}
-              <div className={styles.banner}>
-                <img src={campanha.banner} alt={campanha.nome} />
-                <div className={styles.bannerOverlay} />
-                <span className={`${styles.statusBadge} ${STATUS_CLASS[campanha.status]}`}>
-                  {STATUS_LABEL[campanha.status]}
-                </span>
-              </div>
+      <section className={styles.lobbySection}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Escolha seu Shinobi</h2>
+          <button onClick={() => { setIsCreating(true); setEditingId(null); setFormData({nome:'', class:'', img:''}) }} className={styles.createBtn}>
+            <Plus size={18} /> Criar Personagem
+          </button>
+        </div>
 
-              {/* INFO */}
-              <div className={styles.cardBody}>
-                <h2 className={styles.cardTitle}>{campanha.nome}</h2>
-                <p className={styles.cardDesc}>{campanha.descricao}</p>
-
-                <div className={styles.cardMeta}>
-                  <span className={styles.metaItem}>
-                    <Scroll size={14} /> {campanha.mestre}
-                  </span>
-                  <span className={styles.metaItem}>
-                    <Users size={14} /> {campanha.jogadores} jogadores
-                  </span>
+        <div className={styles.grid}>
+          {personagens.length === 0 ? (
+            <div className={styles.emptyState}>
+              Você não tem nenhum personagem alistado nesta campanha. Crie um agora!
+            </div>
+          ) : (
+            personagens.map((char) => (
+              <div key={char.id} className={styles.charCard}>
+                <div className={styles.charInfo}>
+                  <img 
+                    src={char.img} 
+                    alt={char.nome} 
+                    className={styles.charAvatar} 
+                    onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/150?text=Sem+Foto' }} 
+                  />
+                  <div style={{ flex: 1 }}>
+                    <h3 className={styles.charName}>{char.nome}</h3>
+                    <span className={styles.charMeta}>Nvl {char.level} • {char.class}</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-start' }}>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); openEditModal(char); }} 
+                      style={{ background: '#1a1a1a', border: '1px solid #333', color: '#ccc', borderRadius: '6px', padding: '8px', cursor: 'pointer', display: 'flex' }}
+                      title="Editar Shinobi"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setCharToDelete(char); }} 
+                      style={{ background: '#1a1a1a', border: '1px solid #333', color: '#ff4444', borderRadius: '6px', padding: '8px', cursor: 'pointer', display: 'flex' }}
+                      title="Excluir Shinobi"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
+
+                <button 
+                  onClick={() => enterSession(char.id)} 
+                  disabled={enteringId === char.id}
+                  className={styles.enterBtn}
+                >
+                  {enteringId === char.id ? (
+                    <Loader2 size={18} className={styles.spinner} style={{ margin: 0, color: '#fff' }} />
+                  ) : (
+                    <><Swords size={18} /> Entrar na Sessão</>
+                  )}
+                </button>
               </div>
+            ))
+          )}
+        </div>
+      </section>
 
-              {/* ENTER */}
-              {campanha.status !== 'encerrada' && (
-                <div className={styles.cardEnter}>
-                  Entrar na campanha <ChevronRight size={16} />
-                </div>
-              )}
-            </Link>
-          ))
-        )}
-      </div>
+      {isCreating && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle}>{editingId ? 'Editar Shinobi' : 'Novo Shinobi'}</h2>
+            
+            <div className={styles.formGroup}>
+              <label>Nome do Personagem</label>
+              <input 
+                type="text" 
+                className={styles.input}
+                value={formData.nome}
+                onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                placeholder="Ex: Boruto Uzumaki"
+              />
+            </div>
 
-      {/* Keyframe pra spinner inline */}
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+            <div className={styles.formGroup}>
+              <label>Classe ou Clã</label>
+              <input 
+                type="text" 
+                className={styles.input}
+                value={formData.class}
+                onChange={(e) => setFormData({...formData, class: e.target.value})}
+                placeholder="Ex: Uchiha, Médico..."
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>URL do Avatar (Opcional)</label>
+              <input 
+                type="text" 
+                className={styles.input}
+                value={formData.img}
+                onChange={(e) => setFormData({...formData, img: e.target.value})}
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className={styles.modalActions}>
+              <button onClick={closeFormModal} className={styles.cancelBtn} disabled={saving}>
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveCharacter}
+                disabled={saving || !formData.nome}
+                className={styles.submitBtn}
+              >
+                {saving ? <Loader2 size={18} className={styles.spinner} style={{ margin: 0, color: '#fff' }} /> : 'Salvar Ficha'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {charToDelete && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle} style={{ color: '#ff4444' }}>Excluir Shinobi?</h2>
+            
+            <p style={{ color: '#ccc', textAlign: 'center', marginBottom: '2rem', lineHeight: '1.5' }}>
+              Tem certeza que deseja apagar a ficha de <strong>{charToDelete.nome}</strong>?<br/> 
+              Essa ação não pode ser desfeita.
+            </p>
+
+            <div className={styles.modalActions}>
+              <button onClick={() => setCharToDelete(null)} className={styles.cancelBtn} disabled={saving}>
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmDelete}
+                disabled={saving}
+                className={styles.submitBtn}
+                style={{ background: '#ff4444' }}
+              >
+                {saving ? <Loader2 size={18} className={styles.spinner} style={{ margin: 0, color: '#fff' }} /> : 'Sim, Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
