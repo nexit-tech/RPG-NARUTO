@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import React, { useEffect, useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users, Swords, Map, BookOpen, Settings, Loader2 } from 'lucide-react';
+// Adicionamos os ícones Edit e Trash2!
+import { ArrowLeft, Plus, Loader2, Swords, Users, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import styles from './styles.module.css';
 
@@ -14,99 +15,409 @@ interface Campanha {
   mestre: string;
   rank: string;
   nivel: number;
-  jogadores: number;
   status: string;
   banner_url: string;
 }
 
-export default function AdminCampanhaPage() {
-  const params = useParams();
+interface Personagem {
+  id: string;
+  nome: string;
+  class: string;
+  level: number;
+  img: string;
+  hp: number;
+  max_hp: number;
+  cp: number;
+  max_cp: number;
+}
+
+export default function PlayerLobbyPage({ params }: { params: Promise<{ campanhaId: string }> }) {
   const router = useRouter();
-  const id = params.id as string;
+  
+  const resolvedParams = use(params);
+  const campanhaId = resolvedParams.campanhaId;
 
   const [campanha, setCampanha] = useState<Campanha | null>(null);
+  const [personagens, setPersonagens] = useState<Personagem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [isCreating, setIsCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [enteringId, setEnteringId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ nome: '', class: '', img: '' });
+
+  // NOVOS ESTADOS PARA EDITAR E EXCLUIR
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [charToDelete, setCharToDelete] = useState<Personagem | null>(null);
+
   useEffect(() => {
-    if (id) fetchCampanha();
-  }, [id]);
+    if (campanhaId) {
+      fetchData();
+    }
+  }, [campanhaId]);
 
-  async function fetchCampanha() {
-    const { data, error } = await supabase
-      .from('campanhas')
-      .select('*')
-      .eq('id', id)
-      .single();
+  async function fetchData() {
+    setLoading(true);
 
-    if (error || !data) {
-      router.push('/adminpage');
+    const [campReq, charsReq] = await Promise.all([
+      supabase.from('campanhas').select('*').eq('id', campanhaId).limit(1).single(),
+      supabase.from('personagens').select('id, nome, class, level, img, hp, max_hp, cp, max_cp').eq('campanha_id', campanhaId)
+    ]);
+
+    if (campReq.error || !campReq.data) {
+      console.error('Campanha não encontrada', campReq.error);
+      router.push('/player');
       return;
     }
 
-    setCampanha(data);
+    setCampanha(campReq.data);
+    setPersonagens(charsReq.data || []);
     setLoading(false);
+  }
+
+  // ABRIR MODAL DE EDIÇÃO
+  function openEditModal(char: Personagem) {
+    setFormData({ nome: char.nome, class: char.class, img: char.img });
+    setEditingId(char.id);
+    setIsCreating(true);
+  }
+
+  // FECHAR MODAL DE CRIAÇÃO/EDIÇÃO
+  function closeFormModal() {
+    setIsCreating(false);
+    setEditingId(null);
+    setFormData({ nome: '', class: '', img: '' });
+  }
+
+  // SALVAR (CRIA OU ATUALIZA)
+  async function handleSaveCharacter() {
+    if (!formData.nome.trim()) return;
+    setSaving(true);
+
+    const finalImg = formData.img || 'https://via.placeholder.com/150?text=Sem+Foto';
+
+    if (editingId) {
+      // 🛠️ ATUALIZAR PERSONAGEM EXISTENTE
+      const { data, error } = await supabase
+        .from('personagens')
+        .update({
+          nome: formData.nome,
+          class: formData.class || 'Ninja em Treinamento',
+          img: finalImg,
+        })
+        .eq('id', editingId)
+        .select('id, nome, class, level, img, hp, max_hp, cp, max_cp')
+        .single();
+
+      if (error) {
+        console.error('Erro ao atualizar personagem:', error);
+      } else if (data) {
+        // Atualiza a lista na tela imediatamente
+        setPersonagens(personagens.map(p => p.id === editingId ? data : p));
+        closeFormModal();
+      }
+    } else {
+      // 🌟 CRIAR NOVO PERSONAGEM (Mantive a lógica perfeita que já tínhamos)
+      const novoPersonagem = {
+        campanha_id: campanhaId,
+        nome: formData.nome,
+        class: formData.class || 'Ninja em Treinamento',
+        img: finalImg,
+        level: 1,
+        hp: 100,
+        max_hp: 100,
+        cp: 100,
+        max_cp: 100,
+        atk: 10,
+        def: 10,
+        esq: 10,
+        cd: 10,
+        in_combat: false,
+        is_down: false,
+      };
+
+      const { data, error } = await supabase
+        .from('personagens')
+        .insert([novoPersonagem])
+        .select('id, nome, class, level, img, hp, max_hp, cp, max_cp')
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar personagem:', error);
+      } else if (data) {
+        setPersonagens([...personagens, data]);
+        closeFormModal();
+        
+        await supabase.rpc('increment_jogadores', { camp_id: campanhaId }).catch(() => {
+           supabase.from('campanhas').update({ jogadores: personagens.length + 1 }).eq('id', campanhaId).then();
+        });
+      }
+    }
+
+    setSaving(false);
+  }
+
+  // 🔥 DELETAR PERSONAGEM
+  async function confirmDelete() {
+    if (!charToDelete) return;
+    setSaving(true);
+
+    const { error } = await supabase
+      .from('personagens')
+      .delete()
+      .eq('id', charToDelete.id);
+
+    if (error) {
+      console.error('Erro ao excluir personagem:', error);
+    } else {
+      // Remove da lista na tela
+      setPersonagens(personagens.filter(p => p.id !== charToDelete.id));
+      setCharToDelete(null);
+
+      // Decrementa o número de jogadores da campanha
+      await supabase.rpc('decrement_jogadores', { camp_id: campanhaId }).catch(() => {
+         supabase.from('campanhas').update({ jogadores: Math.max(0, personagens.length - 1) }).eq('id', campanhaId).then();
+      });
+    }
+
+    setSaving(false);
+  }
+
+  async function enterSession(personagemId: string) {
+    setEnteringId(personagemId);
+
+    try {
+      const { data: sessao, error: sessaoError } = await supabase
+        .from('sessoes')
+        .select('id')
+        .eq('campanha_id', campanhaId)
+        .limit(1)
+        .maybeSingle();
+
+      if (sessao) {
+        const { data: tokenExistente } = await supabase
+          .from('sessao_tokens')
+          .select('id')
+          .eq('sessao_id', sessao.id)
+          .eq('personagem_id', personagemId)
+          .limit(1)
+          .maybeSingle();
+
+        if (!tokenExistente) {
+          const char = personagens.find(p => p.id === personagemId);
+          if (char) {
+            const finalImg = char.img.startsWith('blob:') 
+              ? 'https://via.placeholder.com/150?text=Sem+Foto' 
+              : char.img;
+
+            await supabase.from('sessao_tokens').insert({
+              sessao_id: sessao.id,
+              personagem_id: char.id,
+              token_type: 'player',
+              nome: char.nome,
+              img: finalImg,
+              hp: char.hp,
+              max_hp: char.max_hp,
+              cp: char.cp,
+              max_cp: char.max_cp,
+              level: char.level,
+              class: char.class,
+              map_x: 0, 
+              map_y: 0,
+              in_combat: false
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("☠️ Erro inesperado:", err);
+    } finally {
+      router.push(`/player/${campanhaId}/${personagemId}`);
+    }
   }
 
   if (loading) {
     return (
       <div className={styles.loadingScreen}>
         <Loader2 size={40} className={styles.spinner} />
-        <span>Carregando campanha...</span>
+        <span>Sincronizando chakra...</span>
       </div>
     );
   }
 
   if (!campanha) return null;
 
-  const menuItems = [
-    { icon: <Users size={28} />, label: 'Jogadores', sub: 'Fichas e personagens', href: `/admin-campanha/${id}/players` },
-    { icon: <Swords size={28} />, label: 'Sessão Ativa', sub: 'Mapa e combate', href: `/admin-campanha/${id}/sessao-ativa` },
-    { icon: <Map size={28} />, label: 'Estratégia', sub: 'Mapas e anotações', href: `/admin-campanha/${id}/estrategia` },
-    { icon: <BookOpen size={28} />, label: 'NPCs', sub: 'Personagens do mestre', href: `/admin-campanha/${id}/npcs` },
-    { icon: <Settings size={28} />, label: 'Mobs', sub: 'Inimigos e criaturas', href: `/admin-campanha/${id}/mobs` },
-  ];
-
   return (
     <main className={styles.container}>
-      {/* BANNER HERO */}
+      {/* BANNER DA CAMPANHA */}
       <div className={styles.hero}>
         {campanha.banner_url && (
           <img src={campanha.banner_url} alt={campanha.nome} className={styles.heroBg} />
         )}
         <div className={styles.heroOverlay} />
+        
         <div className={styles.heroContent}>
-          <Link href="/adminpage" className={styles.backLink}>
-            <ArrowLeft size={18} /> Missões
+          <Link href="/player" className={styles.backLink}>
+            <ArrowLeft size={18} /> Voltar para Campanhas
           </Link>
-          <div className={styles.badges}>
-            <span className={styles.badge}>{campanha.rank}</span>
-            <span className={styles.badge}>Nível {campanha.nivel}</span>
-            <span className={`${styles.badge} ${styles.badgeStatus}`}>{campanha.status}</span>
-          </div>
           <h1 className={styles.heroTitle}>{campanha.nome}</h1>
-          {campanha.descricao && (
-            <p className={styles.heroDesc}>{campanha.descricao}</p>
-          )}
-          <div className={styles.heroMeta}>
-            <span><Users size={14} /> {campanha.jogadores} Jogadores</span>
-            {campanha.mestre && <span>Mestre: {campanha.mestre}</span>}
+          
+          <div className={styles.heroMeta} style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginTop: '1rem' }}>
+            <span>Mestre: <strong style={{color: '#fff'}}>{campanha.mestre || 'Desconhecido'}</strong></span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff6600', fontWeight: 'bold' }}>
+              <Users size={18} /> {personagens.length} Shinobis Alistados
+            </span>
           </div>
         </div>
       </div>
 
-      {/* MENU DE SEÇÕES */}
-      <section className={styles.menuGrid}>
-        {menuItems.map((item) => (
-          <Link key={item.label} href={item.href} className={styles.menuCard}>
-            <div className={styles.menuIcon}>{item.icon}</div>
-            <div className={styles.menuText}>
-              <span className={styles.menuLabel}>{item.label}</span>
-              <span className={styles.menuSub}>{item.sub}</span>
+      {/* ÁREA DE SELEÇÃO DE PERSONAGEM */}
+      <section className={styles.lobbySection}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Escolha seu Shinobi</h2>
+          <button onClick={() => { setIsCreating(true); setEditingId(null); setFormData({nome:'', class:'', img:''}) }} className={styles.createBtn}>
+            <Plus size={18} /> Criar Personagem
+          </button>
+        </div>
+
+        <div className={styles.grid}>
+          {personagens.length === 0 ? (
+            <div className={styles.emptyState}>
+              Nenhum personagem criado ainda. Seja o primeiro a entrar nesta missão!
             </div>
-            <ArrowLeft size={16} className={styles.menuArrow} />
-          </Link>
-        ))}
+          ) : (
+            personagens.map((char) => (
+              <div key={char.id} className={styles.charCard}>
+                <div className={styles.charInfo}>
+                  <img 
+                    src={char.img} 
+                    alt={char.nome} 
+                    className={styles.charAvatar} 
+                    onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/150?text=Sem+Foto' }} 
+                  />
+                  <div style={{ flex: 1 }}>
+                    <h3 className={styles.charName}>{char.nome}</h3>
+                    <span className={styles.charMeta}>Nvl {char.level} • {char.class}</span>
+                  </div>
+                  
+                  {/* BOTOES DE EDITAR E EXCLUIR */}
+                  <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-start' }}>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); openEditModal(char); }} 
+                      style={{ background: '#1a1a1a', border: '1px solid #333', color: '#ccc', borderRadius: '6px', padding: '8px', cursor: 'pointer', display: 'flex' }}
+                      title="Editar Shinobi"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setCharToDelete(char); }} 
+                      style={{ background: '#1a1a1a', border: '1px solid #333', color: '#ff4444', borderRadius: '6px', padding: '8px', cursor: 'pointer', display: 'flex' }}
+                      title="Excluir Shinobi"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => enterSession(char.id)} 
+                  disabled={enteringId === char.id}
+                  className={styles.enterBtn}
+                >
+                  {enteringId === char.id ? (
+                    <Loader2 size={18} className={styles.spinner} style={{ margin: 0, color: '#fff' }} />
+                  ) : (
+                    <><Swords size={18} /> Entrar na Sessão</>
+                  )}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
       </section>
+
+      {/* MODAL DE CRIAÇÃO / EDIÇÃO */}
+      {isCreating && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle}>{editingId ? 'Editar Shinobi' : 'Novo Shinobi'}</h2>
+            
+            <div className={styles.formGroup}>
+              <label>Nome do Personagem</label>
+              <input 
+                type="text" 
+                className={styles.input}
+                value={formData.nome}
+                onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                placeholder="Ex: Boruto Uzumaki"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Classe ou Clã</label>
+              <input 
+                type="text" 
+                className={styles.input}
+                value={formData.class}
+                onChange={(e) => setFormData({...formData, class: e.target.value})}
+                placeholder="Ex: Uchiha, Médico..."
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>URL do Avatar (Opcional)</label>
+              <input 
+                type="text" 
+                className={styles.input}
+                value={formData.img}
+                onChange={(e) => setFormData({...formData, img: e.target.value})}
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className={styles.modalActions}>
+              <button onClick={closeFormModal} className={styles.cancelBtn} disabled={saving}>
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveCharacter}
+                disabled={saving || !formData.nome}
+                className={styles.submitBtn}
+              >
+                {saving ? <Loader2 size={18} className={styles.spinner} style={{ margin: 0, color: '#fff' }} /> : 'Salvar Ficha'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
+      {charToDelete && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle} style={{ color: '#ff4444' }}>Excluir Shinobi?</h2>
+            
+            <p style={{ color: '#ccc', textAlign: 'center', marginBottom: '2rem', lineHeight: '1.5' }}>
+              Tem certeza que deseja apagar a ficha de <strong>{charToDelete.nome}</strong>?<br/> 
+              Essa ação não pode ser desfeita.
+            </p>
+
+            <div className={styles.modalActions}>
+              <button onClick={() => setCharToDelete(null)} className={styles.cancelBtn} disabled={saving}>
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmDelete}
+                disabled={saving}
+                className={styles.submitBtn}
+                style={{ background: '#ff4444' }}
+              >
+                {saving ? <Loader2 size={18} className={styles.spinner} style={{ margin: 0, color: '#fff' }} /> : 'Sim, Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

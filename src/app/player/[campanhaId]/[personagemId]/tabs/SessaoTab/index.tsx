@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 // Reutiliza TODOS os componentes do admin
-import InitiativeTracker from '@/app/admin-campanha/sessao-ativa/components/InitiativeTracker';
-import BattleMap, { Token } from '@/app/admin-campanha/sessao-ativa/components/BattleMap';
-import CombatLog from '@/app/admin-campanha/sessao-ativa/components/CombatLog';
-import CurrentTurnPanel from '@/app/admin-campanha/sessao-ativa/components/CurrentTurnPanel';
-import ActionModal from '@/app/admin-campanha/sessao-ativa/components/ActionModal';
-import AoEActionModal from '@/app/admin-campanha/sessao-ativa/components/AoEActionModal';
-import InitiativeModal from '@/app/admin-campanha/sessao-ativa/components/InitiativeModal';
-import QuickSheetModal from '@/app/admin-campanha/sessao-ativa/components/QuickSheetModal';
+import InitiativeTracker from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/InitiativeTracker';
+import BattleMap, { Token } from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/BattleMap';
+import CombatLog from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/CombatLog';
+import CurrentTurnPanel from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/CurrentTurnPanel';
+import ActionModal from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/ActionModal';
+import AoEActionModal from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/AoEActionModal';
+import InitiativeModal from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/InitiativeModal';
+import QuickSheetModal from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/QuickSheetModal';
 
 // Painel de comandos exclusivo do player (sem Derrubar e sem Mapa & Grid)
 import PlayerControls from './components/PlayerControls';

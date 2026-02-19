@@ -73,7 +73,6 @@ export default function AdminPage() {
 
     if (campaign) {
       setEditingCampaign(campaign);
-      // Tenta separar rank e nivel do campo level: "Rank S (Nvl 12)"
       const match = campaign.level.match(/^(.+?)\s*\(Nvl\s*(\d+)\)$/);
       setFormData({
         name: campaign.name,
@@ -101,6 +100,7 @@ export default function AdminPage() {
     };
 
     if (editingCampaign) {
+      // APENAS ATUALIZA
       const { error } = await supabase
         .from('campanhas')
         .update(payload)
@@ -108,11 +108,34 @@ export default function AdminPage() {
 
       if (error) console.error('Erro ao atualizar:', error);
     } else {
-      const { error } = await supabase
+      // 🌟 CRIAR NOVA CAMPANHA + SESSÃO AUTOMÁTICA
+      const { data: novaCampanha, error } = await supabase
         .from('campanhas')
-        .insert({ ...payload, status: 'ativa', jogadores: 0 });
+        .insert({ ...payload, status: 'ativa', jogadores: 0 })
+        .select('id') // Pedimos pro Supabase devolver o ID gerado!
+        .single();
 
-      if (error) console.error('Erro ao criar:', error);
+      if (error) {
+        console.error('Erro ao criar campanha:', error);
+      } else if (novaCampanha) {
+        // Agora que temos o ID da campanha, criamos a Sessão atrelada a ela
+        const { error: sessaoError } = await supabase
+          .from('sessoes')
+          .insert({
+            campanha_id: novaCampanha.id,
+            combat_active: false,
+            current_turn_index: 0,
+            show_grid: true,
+            grid_scale: 1.5,
+            snap_to_grid: true
+          });
+
+        if (sessaoError) {
+          console.error('Erro ao criar sessão base:', sessaoError);
+        } else {
+          console.log('✅ Campanha e Sessão criadas com sucesso!');
+        }
+      }
     }
 
     await fetchCampaigns();
@@ -131,6 +154,9 @@ export default function AdminPage() {
     if (!campaignToDelete) return;
     setSaving(true);
 
+    // Nota: Como a sessão tem uma foreign key (campanha_id), 
+    // se o banco estiver configurado com CASCADE, deletar a campanha deleta a sessão.
+    // Se não tiver CASCADE, idealmente apagaríamos a sessão primeiro. Mas vamos focar no insert por hora!
     const { error } = await supabase
       .from('campanhas')
       .delete()
@@ -144,7 +170,7 @@ export default function AdminPage() {
     setCampaignToDelete(null);
   };
 
-  // ── RENDER ───────────────────────────────────────────────────────────────────
+  // ── RENDERIZAÇÃO ──────────────────────────────
   return (
     <main className={styles.container}>
       {/* HEADER */}

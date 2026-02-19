@@ -2,224 +2,287 @@
   min-height: 100vh;
   background: #050505;
   color: #f0f0f0;
-  font-family: var(--font-montserrat);
+  padding-bottom: 4rem;
 }
 
 /* ── LOADING ─────────────────────────────────────── */
 .loadingScreen {
-  min-height: 100vh;
-  background: #050505;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  color: #555;
-  font-size: 0.9rem;
-  font-weight: 700;
-  text-transform: uppercase;
+  background: #050505;
+  color: #888;
+  font-weight: bold;
   letter-spacing: 1px;
 }
-
 .spinner {
-  animation: spin 0.8s linear infinite;
+  animation: spin 1s linear infinite;
   color: #ff6600;
+  margin-bottom: 1rem;
 }
-
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* ── HERO ───────────────────────────────────────── */
+/* ── BANNER HERO ─────────────────────────────────── */
 .hero {
   position: relative;
-  height: 340px;
-  overflow: hidden;
+  height: 320px;
   display: flex;
   align-items: flex-end;
+  border-bottom: 2px solid #ff6600;
+  margin-bottom: 3rem;
+  overflow: hidden;
 }
-
 .heroBg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.4);
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
 }
-
 .heroOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(5, 5, 5, 0.2) 0%,
-    rgba(5, 5, 5, 0.95) 100%
-  );
+  background: linear-gradient(to top, #050505 0%, transparent 100%);
 }
-
 .heroContent {
   position: relative;
   z-index: 1;
-  padding: 2rem 3rem;
+  padding: 2rem 5%;
   width: 100%;
 }
-
 .backLink {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: #666;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  gap: 8px;
+  color: #ff6600;
+  text-decoration: none;
+  font-weight: bold;
   margin-bottom: 1rem;
-  transition: color 0.2s;
-  /* Inverte o ícone pra apontar esquerda */
-  flex-direction: row-reverse;
+  transition: filter 0.2s;
 }
-
-.backLink svg {
-  transform: rotate(180deg);
-  transition: transform 0.2s;
-}
-
 .backLink:hover {
-  color: #ff6600;
+  filter: brightness(1.3);
 }
-
-.badges {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.8rem;
-}
-
-.badge {
-  background: rgba(255, 102, 0, 0.12);
-  border: 1px solid rgba(255, 102, 0, 0.3);
-  color: #ff6600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.badgeStatus {
-  background: rgba(68, 255, 136, 0.1);
-  border-color: rgba(68, 255, 136, 0.3);
-  color: #44ff88;
-}
-
 .heroTitle {
   font-family: 'NinjaNaruto', sans-serif;
-  font-size: 3rem;
+  font-size: 3.5rem;
   color: #fff;
-  margin: 0 0 0.5rem;
-  text-shadow: 0 0 30px rgba(255, 102, 0, 0.3);
-  line-height: 1.1;
+  margin: 0;
+  text-shadow: 2px 2px 20px rgba(0,0,0,0.8);
 }
-
-.heroDesc {
-  color: #888;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  max-width: 600px;
-  margin: 0 0 1rem;
-}
-
 .heroMeta {
-  display: flex;
-  gap: 1.5rem;
-  color: #555;
-  font-size: 0.8rem;
-  font-weight: 700;
+  color: #aaa;
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
 }
 
-.heroMeta span {
+/* ── LOBBY / GRID DE PERSONAGENS ─────────────────── */
+.lobbySection {
+  padding: 0 5%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.sectionTitle {
+  font-size: 1.8rem;
+  color: #fff;
+  margin: 0;
+}
+.createBtn {
+  background: #ff6600;
+  color: #fff;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+  transition: all 0.2s;
+}
+.createBtn:hover {
+  background: #e65c00;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 102, 0, 0.3);
 }
 
-.heroMeta svg { color: #ff6600; }
-
-/* ── MENU GRID ──────────────────────────────────── */
-.menuGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 800px;
-  margin: 3rem auto;
-  padding: 0 3rem;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+  background: #0a0a0a;
+  border: 1px dashed #333;
+  border-radius: 12px;
+  color: #666;
+  font-size: 1.1rem;
 }
 
-.menuCard {
+/* ── CARD DO PERSONAGEM ──────────────────────────── */
+.charCard {
   background: #0a0a0a;
   border: 1px solid #1a1a1a;
-  border-radius: 10px;
-  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  padding: 1.5rem;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 1.5rem;
   transition: all 0.3s;
-  cursor: pointer;
 }
-
-.menuCard:hover {
+.charCard:hover {
   border-color: #ff6600;
-  background: #0f0f0f;
-  transform: translateX(6px);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(255, 102, 0, 0.08);
+}
+.charInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.charAvatar {
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #222;
+  transition: border-color 0.3s;
+}
+.charCard:hover .charAvatar {
+  border-color: #ff6600;
+}
+.charName {
+  margin: 0 0 0.2rem 0;
+  font-size: 1.3rem;
+  color: #fff;
+}
+.charMeta {
+  color: #ff6600;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.enterBtn {
+  background: #111;
+  color: #ccc;
+  border: 1px solid #333;
+  padding: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+.charCard:hover .enterBtn {
+  background: #ff6600;
+  color: #fff;
+  border-color: #ff6600;
 }
 
-.menuIcon {
-  color: #ff6600;
-  width: 48px;
-  height: 48px;
+/* ── MODAL ───────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 102, 0, 0.08);
-  border-radius: 10px;
-  flex-shrink: 0;
-  transition: background 0.3s;
+  z-index: 100;
 }
-
-.menuCard:hover .menuIcon {
-  background: rgba(255, 102, 0, 0.15);
+.modalContent {
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.8);
 }
-
-.menuText {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.menuLabel {
+.modalTitle {
   font-family: 'NinjaNaruto', sans-serif;
-  font-size: 1.2rem;
-  color: #fff;
-  letter-spacing: 0.5px;
-}
-
-.menuSub {
-  color: #444;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.menuArrow {
-  color: #333;
-  transform: rotate(180deg);
-  transition: all 0.3s;
-}
-
-.menuCard:hover .menuArrow {
   color: #ff6600;
-  transform: rotate(180deg) translateX(-4px);
+  font-size: 1.8rem;
+  text-align: center;
+  margin: 0 0 2rem 0;
+}
+.formGroup {
+  margin-bottom: 1.2rem;
+}
+.formGroup label {
+  display: block;
+  color: #aaa;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+.input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input:focus {
+  border-color: #ff6600;
+}
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.cancelBtn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cancelBtn:hover {
+  background: #222;
+  color: #fff;
+}
+.submitBtn {
+  flex: 1;
+  background: #ff6600;
+  border: none;
+  color: #fff;
+  padding: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.2s;
+}
+.submitBtn:hover:not(:disabled) {
+  background: #e65c00;
+}
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
