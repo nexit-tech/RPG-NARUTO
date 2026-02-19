@@ -28,6 +28,7 @@ interface Personagem {
   max_hp: number;
   cp: number;
   max_cp: number;
+  user_id?: string;
 }
 
 export default function PlayerLobbyPage({ params }: { params: Promise<{ campanhaId: string }> }) {
@@ -36,6 +37,8 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
   const resolvedParams = use(params);
   const campanhaId = resolvedParams.campanhaId;
 
+  // Guarda o usuário autenticado
+  const [currentUser, setCurrentUser] = useState<any>(null); 
   const [campanha, setCampanha] = useState<Campanha | null>(null);
   const [personagens, setPersonagens] = useState<Personagem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,20 +60,41 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
   async function fetchData() {
     setLoading(true);
 
-    const [campReq, charsReq] = await Promise.all([
-      supabase.from('campanhas').select('*').eq('id', campanhaId).limit(1).single(),
-      supabase.from('personagens').select('id, nome, class, level, img, hp, max_hp, cp, max_cp').eq('campanha_id', campanhaId)
-    ]);
+    try {
+      // 1. Pega o usuário logado com máxima segurança
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error("Erro de Autenticação:", authError);
+        router.push('/login');
+        return;
+      }
+      
+      console.log("✅ Usuário logado detectado:", user.id);
+      setCurrentUser(user);
 
-    if (campReq.error || !campReq.data) {
-      console.error('Campanha não encontrada', campReq.error);
-      router.push('/player');
-      return;
+      // 2. Busca os dados da campanha e as fichas DO USUÁRIO
+      const [campReq, charsReq] = await Promise.all([
+        supabase.from('campanhas').select('*').eq('id', campanhaId).limit(1).single(),
+        supabase.from('personagens')
+          .select('*')
+          .eq('campanha_id', campanhaId)
+          .eq('user_id', user.id) // O filtro rigoroso
+      ]);
+
+      if (campReq.error || !campReq.data) {
+        console.error('Campanha não encontrada', campReq.error);
+        router.push('/player');
+        return;
+      }
+
+      setCampanha(campReq.data);
+      setPersonagens(charsReq.data || []);
+    } catch (err) {
+      console.error("Erro no fetchData:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setCampanha(campReq.data);
-    setPersonagens(charsReq.data || []);
-    setLoading(false);
   }
 
   function openEditModal(char: Personagem) {
@@ -87,93 +111,114 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
 
   async function handleSaveCharacter() {
     if (!formData.nome.trim()) return;
-    setSaving(true);
+    
+    // Verificação de segurança tripla
+    if (!currentUser || !currentUser.id) {
+      alert("Erro crítico: Sistema perdeu seu login. Recarregue a página.");
+      return;
+    }
 
+    setSaving(true);
     const finalImg = formData.img || 'https://via.placeholder.com/150?text=Sem+Foto';
 
-    if (editingId) {
-      const { data, error } = await supabase
-        .from('personagens')
-        .update({
+    try {
+      if (editingId) {
+        // --- MODO EDIÇÃO ---
+        const { data, error } = await supabase
+          .from('personagens')
+          .update({
+            nome: formData.nome,
+            class: formData.class || 'Ninja em Treinamento',
+            img: finalImg,
+          })
+          .eq('id', editingId)
+          .eq('user_id', currentUser.id) // Garante que é dono da ficha
+          .select('*')
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setPersonagens(personagens.map(p => p.id === editingId ? data : p));
+          closeFormModal();
+        }
+
+      } else {
+        // --- MODO CRIAÇÃO ---
+        const novoPersonagem = {
+          campanha_id: campanhaId,
+          user_id: currentUser.id, // INJEÇÃO DIRETA DO ID AQUI
           nome: formData.nome,
           class: formData.class || 'Ninja em Treinamento',
           img: finalImg,
-        })
-        .eq('id', editingId)
-        .select('id, nome, class, level, img, hp, max_hp, cp, max_cp')
-        .single();
+          level: 1,
+          hp: 100,
+          max_hp: 100,
+          cp: 100,
+          max_cp: 100,
+          atk: 10,
+          def: 10,
+          esq: 10,
+          cd: 10,
+          in_combat: false,
+          is_down: false,
+        };
 
-      if (error) {
-        console.error('Erro ao atualizar personagem:', error);
-      } else if (data) {
-        setPersonagens(personagens.map(p => p.id === editingId ? data : p));
-        closeFormModal();
-      }
-    } else {
-      const novoPersonagem = {
-        campanha_id: campanhaId,
-        nome: formData.nome,
-        class: formData.class || 'Ninja em Treinamento',
-        img: finalImg,
-        level: 1,
-        hp: 100,
-        max_hp: 100,
-        cp: 100,
-        max_cp: 100,
-        atk: 10,
-        def: 10,
-        esq: 10,
-        cd: 10,
-        in_combat: false,
-        is_down: false,
-      };
+        console.log("🚀 Enviando para o Supabase:", novoPersonagem);
 
-      const { data, error } = await supabase
-        .from('personagens')
-        .insert([novoPersonagem])
-        .select('id, nome, class, level, img, hp, max_hp, cp, max_cp')
-        .single();
+        const { data, error } = await supabase
+          .from('personagens')
+          .insert([novoPersonagem])
+          .select('*')
+          .single();
 
-      if (error) {
-        console.error('Erro ao criar personagem:', error);
-      } else if (data) {
-        setPersonagens([...personagens, data]);
-        closeFormModal();
-        
-        // ✅ CORREÇÃO: Usando a desestruturação do Supabase para tratar erros de RPC
-        const { error: rpcError } = await supabase.rpc('increment_jogadores', { camp_id: campanhaId });
-        if (rpcError) {
-          await supabase.from('campanhas').update({ jogadores: personagens.length + 1 }).eq('id', campanhaId);
+        if (error) {
+          console.error('❌ Erro retornado do Supabase ao criar:', error);
+          alert("Falha ao salvar. Verifique o console.");
+        } else if (data) {
+          console.log("✅ Criado com sucesso no banco:", data);
+          setPersonagens([...personagens, data]);
+          closeFormModal();
+          
+          // Tenta atualizar o contador de jogadores na campanha
+          const { error: rpcError } = await supabase.rpc('increment_jogadores', { camp_id: campanhaId });
+          if (rpcError) {
+            await supabase.from('campanhas').update({ jogadores: personagens.length + 1 }).eq('id', campanhaId);
+          }
         }
       }
+    } catch (err) {
+      console.error("❌ Erro fatal no handleSaveCharacter:", err);
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   }
 
   async function confirmDelete() {
-    if (!charToDelete) return;
+    if (!charToDelete || !currentUser) return;
     setSaving(true);
 
-    const { error } = await supabase
-      .from('personagens')
-      .delete()
-      .eq('id', charToDelete.id);
+    try {
+      const { error } = await supabase
+        .from('personagens')
+        .delete()
+        .eq('id', charToDelete.id)
+        .eq('user_id', currentUser.id);
 
-    if (error) {
-      console.error('Erro ao excluir personagem:', error);
-    } else {
+      if (error) throw error;
+
       setPersonagens(personagens.filter(p => p.id !== charToDelete.id));
       setCharToDelete(null);
 
-      // ✅ CORREÇÃO: Tratamento de erro seguro no RPC
       const { error: rpcError } = await supabase.rpc('decrement_jogadores', { camp_id: campanhaId });
       if (rpcError) {
          await supabase.from('campanhas').update({ jogadores: Math.max(0, personagens.length - 1) }).eq('id', campanhaId);
       }
+    } catch (err) {
+      console.error('Erro ao excluir personagem:', err);
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   }
 
   async function enterSession(personagemId: string) {
@@ -223,7 +268,7 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
         }
       }
     } catch (err) {
-      console.error("☠️ Erro inesperado:", err);
+      console.error("☠️ Erro inesperado ao entrar na sessão:", err);
     } finally {
       router.push(`/player/${campanhaId}/${personagemId}`);
     }
@@ -257,7 +302,7 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
           <div className={styles.heroMeta} style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginTop: '1rem' }}>
             <span>Mestre: <strong style={{color: '#fff'}}>{campanha.mestre || 'Desconhecido'}</strong></span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff6600', fontWeight: 'bold' }}>
-              <Users size={18} /> {personagens.length} Shinobis Alistados
+              <Users size={18} /> Sua Equipe
             </span>
           </div>
         </div>
@@ -274,7 +319,7 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
         <div className={styles.grid}>
           {personagens.length === 0 ? (
             <div className={styles.emptyState}>
-              Nenhum personagem criado ainda. Seja o primeiro a entrar nesta missão!
+              Você não tem nenhum personagem alistado nesta campanha. Crie um agora!
             </div>
           ) : (
             personagens.map((char) => (
