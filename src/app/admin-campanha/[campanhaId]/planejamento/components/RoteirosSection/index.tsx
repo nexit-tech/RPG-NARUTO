@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Scroll, Plus, Trash2, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import styles from './styles.module.css';
 
 interface RoteiroPasso {
@@ -12,71 +13,122 @@ interface RoteiroPasso {
 }
 
 interface Roteiro {
-  id: number;
+  id: string; // Virou string
   titulo: string;
   descricao: string;
   passos: RoteiroPasso[];
   expandido: boolean;
 }
 
-const INITIAL_ROTEIROS: Roteiro[] = [
-  {
-    id: 1,
-    titulo: 'Arco: Exame Chūnin',
-    descricao: 'Os jogadores participam do exame e precisam superar as 3 fases.',
-    expandido: true,
-    passos: [
-      { id: 1, titulo: 'Fase 1 — Prova Escrita',    descricao: 'Teste de inteligência e coleta de informações. Dica: encorajar espionagem.', concluido: true },
-      { id: 2, titulo: 'Fase 2 — Floresta da Morte', descricao: 'Sobreviver por 5 dias e coletar os pergaminhos Terra e Céu.', concluido: true },
-      { id: 3, titulo: 'Fase 3 — Batalhas',           descricao: 'Confrontos individuais. Revelar que Orochimaru infiltrou agentes.', concluido: false },
-      { id: 4, titulo: 'Twist — Invasão de Konoha',   descricao: 'Durante as finais, Orochimaru e Suna atacam. Combate em massa.', concluido: false },
-    ],
-  },
-];
-
-export default function RoteirosSection() {
-  const [roteiros, setRoteiros] = useState<Roteiro[]>(INITIAL_ROTEIROS);
+export default function RoteirosSection({ campanhaId }: { campanhaId: string }) {
+  const [roteiros, setRoteiros] = useState<Roteiro[]>([]);
   const [showNewRoteiro, setShowNewRoteiro] = useState(false);
   const [novoRoteiro, setNovoRoteiro] = useState({ titulo: '', descricao: '' });
 
-  // ── ROTEIRO ACTIONS ─────────────────────────────
-  const addRoteiro = () => {
-    if (!novoRoteiro.titulo.trim()) return;
-    setRoteiros(prev => [...prev, { id: Date.now(), ...novoRoteiro, expandido: true, passos: [] }]);
-    setNovoRoteiro({ titulo: '', descricao: '' });
-    setShowNewRoteiro(false);
+  useEffect(() => {
+    fetchRoteiros();
+  }, [campanhaId]);
+
+  const fetchRoteiros = async () => {
+    const { data, error } = await supabase
+      .from('roteiros')
+      .select('*')
+      .eq('campanha_id', campanhaId)
+      .order('ordem', { ascending: true });
+
+    if (data && !error) {
+      setRoteiros(data.map(d => {
+        // Como 'passos' não é uma coluna nativa, salvamos como JSON dentro do 'conteudo'
+        const parsed = JSON.parse(d.conteudo || '{"descricao": "", "passos": []}');
+        return {
+          id: d.id,
+          titulo: d.titulo,
+          descricao: parsed.descricao || '',
+          passos: parsed.passos || [],
+          expandido: false
+        };
+      }));
+    }
   };
 
-  const deleteRoteiro = (id: number) => setRoteiros(prev => prev.filter(r => r.id !== id));
+  const syncDb = async (roteiroData: Roteiro) => {
+    await supabase.from('roteiros').update({
+      conteudo: JSON.stringify({ descricao: roteiroData.descricao, passos: roteiroData.passos })
+    }).eq('id', roteiroData.id);
+  };
 
-  const toggleExpand = (id: number) =>
+  const addRoteiro = async () => {
+    if (!novoRoteiro.titulo.trim()) return;
+
+    const newRoteiroData = { descricao: novoRoteiro.descricao, passos: [] };
+    const { data, error } = await supabase.from('roteiros').insert([{
+      campanha_id: campanhaId,
+      titulo: novoRoteiro.titulo,
+      conteudo: JSON.stringify(newRoteiroData),
+      ordem: roteiros.length
+    }]).select().single();
+
+    if (data && !error) {
+      setRoteiros(prev => [...prev, {
+        id: data.id,
+        titulo: data.titulo,
+        descricao: novoRoteiro.descricao,
+        passos: [],
+        expandido: true
+      }]);
+      setNovoRoteiro({ titulo: '', descricao: '' });
+      setShowNewRoteiro(false);
+    }
+  };
+
+  const deleteRoteiro = async (id: string) => {
+    await supabase.from('roteiros').delete().eq('id', id);
+    setRoteiros(prev => prev.filter(r => r.id !== id));
+  };
+
+  const toggleExpand = (id: string) =>
     setRoteiros(prev => prev.map(r => r.id === id ? { ...r, expandido: !r.expandido } : r));
 
-  // ── PASSO ACTIONS ────────────────────────────────
-  const addPasso = (roteiroId: number) =>
-    setRoteiros(prev => prev.map(r =>
-      r.id !== roteiroId ? r : {
-        ...r,
-        passos: [...r.passos, { id: Date.now(), titulo: 'Novo Passo', descricao: '', concluido: false }]
-      }
-    ));
+  const addPasso = (roteiroId: string) => {
+    setRoteiros(prev => {
+      const updated = prev.map(r => {
+        if (r.id !== roteiroId) return r;
+        const newState = { ...r, passos: [...r.passos, { id: Date.now(), titulo: 'Novo Passo', descricao: '', concluido: false }] };
+        syncDb(newState); // Sincroniza logo após criar
+        return newState;
+      });
+      return updated;
+    });
+  };
 
-  const updatePasso = (roteiroId: number, passoId: number, field: string, val: any) =>
+  const updatePasso = (roteiroId: string, passoId: number, field: string, val: any) => {
     setRoteiros(prev => prev.map(r =>
       r.id !== roteiroId ? r : {
         ...r,
         passos: r.passos.map(p => p.id === passoId ? { ...p, [field]: val } : p)
       }
     ));
+  };
 
-  const deletePasso = (roteiroId: number, passoId: number) =>
-    setRoteiros(prev => prev.map(r =>
-      r.id !== roteiroId ? r : { ...r, passos: r.passos.filter(p => p.id !== passoId) }
-    ));
+  const triggerDbSave = (roteiroId: string) => {
+    const roteiroToSave = roteiros.find(r => r.id === roteiroId);
+    if (roteiroToSave) syncDb(roteiroToSave);
+  };
+
+  const deletePasso = (roteiroId: string, passoId: number) => {
+    setRoteiros(prev => {
+      const updated = prev.map(r => {
+        if (r.id !== roteiroId) return r;
+        const newState = { ...r, passos: r.passos.filter(p => p.id !== passoId) };
+        syncDb(newState); // Sincroniza logo após apagar
+        return newState;
+      });
+      return updated;
+    });
+  };
 
   return (
     <div className={styles.section}>
-      {/* HEADER */}
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}><Scroll size={20} /> Roteiros</h2>
         <button className={styles.addBtn} onClick={() => setShowNewRoteiro(!showNewRoteiro)}>
@@ -84,7 +136,6 @@ export default function RoteirosSection() {
         </button>
       </div>
 
-      {/* FORM NOVO ROTEIRO */}
       {showNewRoteiro && (
         <div className={styles.formCard}>
           <div className={styles.formGroup}>
@@ -113,7 +164,6 @@ export default function RoteirosSection() {
         </div>
       )}
 
-      {/* LISTA DE ROTEIROS */}
       <div className={styles.roteirosList}>
         {roteiros.map(roteiro => {
           const concluidos = roteiro.passos.filter(p => p.concluido).length;
@@ -122,7 +172,6 @@ export default function RoteirosSection() {
 
           return (
             <div key={roteiro.id} className={styles.roteiroCard}>
-              {/* HEADER DO ROTEIRO */}
               <div className={styles.roteiroHeader}>
                 <div className={styles.roteiroTitleRow}>
                   <button className={styles.expandBtn} onClick={() => toggleExpand(roteiro.id)}>
@@ -141,14 +190,12 @@ export default function RoteirosSection() {
                 </div>
               </div>
 
-              {/* BARRA DE PROGRESSO */}
               {total > 0 && (
                 <div className={styles.progressTrack}>
                   <div className={styles.progressFill} style={{ width: `${progresso}%` }} />
                 </div>
               )}
 
-              {/* PASSOS */}
               {roteiro.expandido && (
                 <div className={styles.passosList}>
                   {roteiro.passos.map((passo, idx) => (
@@ -156,7 +203,11 @@ export default function RoteirosSection() {
                       <div className={styles.passoLeft}>
                         <button
                           className={`${styles.passoCheck} ${passo.concluido ? styles.passoCheckDone : ''}`}
-                          onClick={() => updatePasso(roteiro.id, passo.id, 'concluido', !passo.concluido)}
+                          onClick={() => {
+                            updatePasso(roteiro.id, passo.id, 'concluido', !passo.concluido);
+                            // Sincroniza com db no timeout rapido para garantir que o state rodou
+                            setTimeout(() => triggerDbSave(roteiro.id), 100);
+                          }}
                         >
                           {passo.concluido ? <Check size={12} /> : <span>{idx + 1}</span>}
                         </button>
@@ -168,12 +219,14 @@ export default function RoteirosSection() {
                           className={styles.passoTitulo}
                           value={passo.titulo}
                           onChange={e => updatePasso(roteiro.id, passo.id, 'titulo', e.target.value)}
+                          onBlur={() => triggerDbSave(roteiro.id)} // Salva no banco ao sair do input
                           placeholder="Título do passo..."
                         />
                         <textarea
                           className={styles.passoDesc}
                           value={passo.descricao}
                           onChange={e => updatePasso(roteiro.id, passo.id, 'descricao', e.target.value)}
+                          onBlur={() => triggerDbSave(roteiro.id)} // Salva no banco ao sair do textarea
                           placeholder="Descrição, dicas para o mestre, eventos secretos..."
                           rows={2}
                         />

@@ -1,39 +1,74 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Map, Plus, Eye, X, Trash2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import styles from './styles.module.css';
 
 interface MapItem {
-  id: number;
+  id: string; // Virou string pro UUID
   name: string;
   imageUrl: string;
   description: string;
 }
 
-const INITIAL_MAPS: MapItem[] = [
-  { id: 1, name: 'Floresta de Konoha', imageUrl: 'https://i.pinimg.com/originals/99/3a/05/993a059c03db26993952dc67b931920d.jpg', description: 'Área de treinamento e patrulha' },
-  { id: 2, name: 'Vale do Fim', imageUrl: 'https://images7.alphacoders.com/611/611138.png', description: 'Local do confronto final' },
-];
-
-export default function MapasSection() {
-  const [mapas, setMapas] = useState<MapItem[]>(INITIAL_MAPS);
+export default function MapasSection({ campanhaId }: { campanhaId: string }) {
+  const [mapas, setMapas] = useState<MapItem[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [viewMap, setViewMap] = useState<MapItem | null>(null);
   const [form, setForm] = useState({ name: '', imageUrl: '', description: '' });
 
-  const handleAdd = () => {
-    if (!form.name.trim() || !form.imageUrl.trim()) return;
-    setMapas(prev => [...prev, { id: Date.now(), ...form }]);
-    setForm({ name: '', imageUrl: '', description: '' });
-    setShowForm(false);
+  useEffect(() => {
+    fetchMapas();
+  }, [campanhaId]);
+
+  const fetchMapas = async () => {
+    const { data, error } = await supabase
+      .from('mapas')
+      .select('*')
+      .eq('campanha_id', campanhaId)
+      .order('created_at', { ascending: false });
+
+    if (data && !error) {
+      setMapas(data.map(d => ({
+        id: d.id,
+        name: d.nome,
+        imageUrl: d.url,
+        description: d.descricao || ''
+      })));
+    }
   };
 
-  const handleDelete = (id: number) => setMapas(prev => prev.filter(m => m.id !== id));
+  const handleAdd = async () => {
+    if (!form.name.trim() || !form.imageUrl.trim()) return;
+    
+    const { data, error } = await supabase.from('mapas').insert([{
+      campanha_id: campanhaId,
+      nome: form.name,
+      url: form.imageUrl,
+      descricao: form.description
+    }]).select().single();
+
+    if (data && !error) {
+      setMapas(prev => [{
+        id: data.id, 
+        name: data.nome, 
+        imageUrl: data.url, 
+        description: data.descricao || '' 
+      }, ...prev]);
+      
+      setForm({ name: '', imageUrl: '', description: '' });
+      setShowForm(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from('mapas').delete().eq('id', id);
+    setMapas(prev => prev.filter(m => m.id !== id));
+  };
 
   return (
     <div className={styles.section}>
-      {/* HEADER */}
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}><Map size={20} /> Mapas</h2>
         <button className={styles.addBtn} onClick={() => setShowForm(!showForm)}>
@@ -41,7 +76,6 @@ export default function MapasSection() {
         </button>
       </div>
 
-      {/* FORM */}
       {showForm && (
         <div className={styles.formCard}>
           <div className={styles.formGrid}>
@@ -80,7 +114,6 @@ export default function MapasSection() {
         </div>
       )}
 
-      {/* GRID */}
       <div className={styles.mapGrid}>
         {mapas.map(map => (
           <div key={map.id} className={styles.mapCard}>
@@ -110,7 +143,6 @@ export default function MapasSection() {
         )}
       </div>
 
-      {/* LIGHTBOX */}
       {viewMap && (
         <div className={styles.lightbox} onClick={() => setViewMap(null)}>
           <div className={styles.lightboxContent} onClick={e => e.stopPropagation()}>

@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Plus, Edit3, Trash2, Check, X } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import styles from './styles.module.css';
 
 interface Note {
-  id: number;
+  id: string; // Virou string pro UUID do Supabase
   title: string;
   content: string;
   color: string;
@@ -15,24 +16,56 @@ interface Note {
 const NOTE_COLORS  = ['#1a1a2e', '#1a2e1a', '#2e1a1a', '#1a2a2e', '#2e2a1a'];
 const NOTE_ACCENTS = ['#4444ff', '#44ff88', '#ff4444', '#00ccff', '#ffcc00'];
 
-const INITIAL_NOTES: Note[] = [
-  { id: 1, title: 'Segredos da Akatsuki', content: 'Madara está por trás de tudo. Os membros não sabem do plano real...', color: NOTE_COLORS[2], createdAt: '18/02/2026' },
-  { id: 2, title: 'Aliados de Konoha',    content: 'Tsunade pode ser convocada em caso de emergência. Jiraiya está em missão espiã.', color: NOTE_COLORS[0], createdAt: '18/02/2026' },
-];
-
-export default function AnotacoesSection() {
-  const [notes, setNotes] = useState<Note[]>(INITIAL_NOTES);
-  const [editingId, setEditingId] = useState<number | null>(null);
+export default function AnotacoesSection({ campanhaId }: { campanhaId: string }) {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [newNote, setNewNote] = useState({ title: '', content: '', color: NOTE_COLORS[0] });
   const [editData, setEditData] = useState({ title: '', content: '' });
 
-  const handleAdd = () => {
+  useEffect(() => {
+    fetchNotes();
+  }, [campanhaId]);
+
+  const fetchNotes = async () => {
+    const { data, error } = await supabase
+      .from('anotacoes')
+      .select('*')
+      .eq('campanha_id', campanhaId)
+      .order('created_at', { ascending: false });
+
+    if (data && !error) {
+      setNotes(data.map(d => ({
+        id: d.id,
+        title: d.titulo,
+        content: d.conteudo || '',
+        color: d.cor || NOTE_COLORS[0],
+        createdAt: new Date(d.created_at).toLocaleDateString('pt-BR')
+      })));
+    }
+  };
+
+  const handleAdd = async () => {
     if (!newNote.title.trim()) return;
-    const today = new Date().toLocaleDateString('pt-BR');
-    setNotes(prev => [...prev, { id: Date.now(), ...newNote, createdAt: today }]);
-    setNewNote({ title: '', content: '', color: NOTE_COLORS[0] });
-    setShowNew(false);
+    
+    const { data, error } = await supabase.from('anotacoes').insert([{
+      campanha_id: campanhaId,
+      titulo: newNote.title,
+      conteudo: newNote.content,
+      cor: newNote.color
+    }]).select().single();
+
+    if (!error && data) {
+      setNotes(prev => [{
+        id: data.id,
+        title: data.titulo,
+        content: data.conteudo || '',
+        color: data.cor,
+        createdAt: new Date(data.created_at).toLocaleDateString('pt-BR')
+      }, ...prev]);
+      setNewNote({ title: '', content: '', color: NOTE_COLORS[0] });
+      setShowNew(false);
+    }
   };
 
   const startEdit = (note: Note) => {
@@ -40,16 +73,24 @@ export default function AnotacoesSection() {
     setEditData({ title: note.title, content: note.content });
   };
 
-  const saveEdit = (id: number) => {
+  const saveEdit = async (id: string) => {
+    await supabase.from('anotacoes').update({
+      titulo: editData.title,
+      conteudo: editData.content,
+      updated_at: new Date()
+    }).eq('id', id);
+
     setNotes(prev => prev.map(n => n.id === id ? { ...n, ...editData } : n));
     setEditingId(null);
   };
 
-  const deleteNote = (id: number) => setNotes(prev => prev.filter(n => n.id !== id));
+  const deleteNote = async (id: string) => {
+    await supabase.from('anotacoes').delete().eq('id', id);
+    setNotes(prev => prev.filter(n => n.id !== id));
+  };
 
   return (
     <div className={styles.section}>
-      {/* HEADER */}
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}><FileText size={20} /> Anotações</h2>
         <button className={styles.addBtn} onClick={() => setShowNew(!showNew)}>
@@ -57,7 +98,6 @@ export default function AnotacoesSection() {
         </button>
       </div>
 
-      {/* FORM */}
       {showNew && (
         <div className={styles.formCard}>
           <div className={styles.formGroup}>
@@ -99,7 +139,6 @@ export default function AnotacoesSection() {
         </div>
       )}
 
-      {/* GRID */}
       <div className={styles.notesGrid}>
         {notes.map((note) => {
           const accent = NOTE_ACCENTS[NOTE_COLORS.indexOf(note.color)] || '#ff6600';

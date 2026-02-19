@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation'; // Adicionando o useParams
 import { ArrowLeft, Map, FileText, Scroll } from 'lucide-react';
 import MapasSection from './components/MapasSection';
 import AnotacoesSection from './components/AnotacoesSection';
@@ -11,12 +12,16 @@ import styles from './styles.module.css';
 type Tab = 'mapas' | 'anotacoes' | 'roteiros';
 
 export default function SalaEstrategiaPage() {
+  const params = useParams();
+  const campanhaId = params.campanhaId as string; // Pegando o ID da URL
+
   const [activeTab, setActiveTab] = useState<Tab>('mapas');
 
   return (
     <main className={styles.container}>
       <header className={styles.header}>
-        <Link href="/admin-campanha" className={styles.backLink}>
+        {/* Atualizando o link de voltar para ir ao painel da campanha correta */}
+        <Link href={`/admin-campanha/${campanhaId}`} className={styles.backLink}>
           <ArrowLeft size={20} /> Painel
         </Link>
         <div className={styles.titleArea}>
@@ -48,9 +53,10 @@ export default function SalaEstrategiaPage() {
       </div>
 
       <div className={styles.content}>
-        {activeTab === 'mapas' && <MapasSection />}
-        {activeTab === 'anotacoes' && <AnotacoesSection />}
-        {activeTab === 'roteiros' && <RoteirosSection />}
+        {/* Passando o campanhaId para os componentes */}
+        {activeTab === 'mapas' && <MapasSection campanhaId={campanhaId} />}
+        {activeTab === 'anotacoes' && <AnotacoesSection campanhaId={campanhaId} />}
+        {activeTab === 'roteiros' && <RoteirosSection campanhaId={campanhaId} />}
       </div>
     </main>
   );

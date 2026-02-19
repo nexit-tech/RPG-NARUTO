@@ -37,31 +37,36 @@ export default async function PlayersListPage({ params }: { params: Promise<{ ca
   return (
     <main className={styles.container}>
       
-      {/* HEADER LIMPO USANDO SUAS CLASSES */}
-      <header className={styles.topBar}>
-        <div>
+      {/* HEADER CORRIGIDO COM AS CLASSES DO SEU CSS */}
+      <header className={styles.header}>
+        <div className={styles.headerTop}>
           <Link href={`/admin-campanha/${campanhaId}`} className={styles.backLink}>
             <ArrowLeft size={18} /> Voltar para o Painel
           </Link>
+        </div>
+        <div className={styles.titleArea}>
           <h1 className={styles.pageTitle}>
-            <Users size={28} style={{ marginRight: '10px', color: '#ff6600' }} />
-            Equipe Shinobi {campanha ? `- ${campanha.nome}` : ''}
+            Equipe Shinobi
           </h1>
+          <p className={styles.subTitle}>
+            {campanha ? `Mesa: ${campanha.nome}` : ''}
+          </p>
         </div>
       </header>
 
-      {/* ÁREA DE LISTAGEM */}
-      <section className={styles.listContainer}>
+      {/* ÁREA DE LISTAGEM COM A GRID CERTA */}
+      <section>
         {error && (
-          <div className={styles.emptyState}>
+          <div style={{ textAlign: 'center', color: '#ff6600', padding: '2rem' }}>
             <span>Erro ao carregar jogadores: {error.message}</span>
           </div>
         )}
 
         {safeJogadores.length === 0 && !error ? (
-          <div className={styles.emptyState}>
-            <span>Nenhum shinobi recrutado nesta campanha ainda.</span>
-            <small>Os jogadores precisam acessar o link da mesa e criar suas fichas.</small>
+          <div style={{ textAlign: 'center', color: '#888', padding: '4rem', background: '#0f0f0f', borderRadius: '8px', border: '1px solid #222' }}>
+            <Users size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+            <h3 style={{ color: '#fff', marginBottom: '0.5rem' }}>Nenhum shinobi recrutado nesta campanha ainda.</h3>
+            <p style={{ fontSize: '0.9rem' }}>Os jogadores precisam acessar o link da mesa e criar suas fichas.</p>
           </div>
         ) : (
           <div className={styles.grid}>
@@ -71,32 +76,32 @@ export default async function PlayersListPage({ params }: { params: Promise<{ ca
                 key={player.id} 
                 className={styles.card}
               >
-                {/* ESTRUTURA IGUAL A DOS MOBS/NPCS PRA PUXAR SEU CSS */}
-                <div className={styles.imageWrapper}>
+                <div className={styles.imageContainer}>
                   <img 
-                    src={player.img || 'https://via.placeholder.com/150?text=Sem+Foto'} 
+                    src={player.img || 'https://via.placeholder.com/400x300?text=Sem+Foto'} 
                     alt={player.nome} 
                     className={styles.image} 
                   />
+                  <div className={styles.levelBadge}>Nvl {player.level || 1}</div>
                 </div>
                 
-                <div className={styles.content}>
-                  <h3 className={styles.title}>{player.nome}</h3>
+                <div className={styles.cardContent}>
+                  <h3 className={styles.name}>{player.nome}</h3>
+                  <div className={styles.clan}>{player.class || 'Ninja em Treinamento'}</div>
                   
-                  <div className={styles.metaData}>
-                    <div className={styles.tag}>
-                      <span>Nvl {player.level || 1} • {player.class || 'Ninja em Treinamento'}</span>
-                    </div>
-                  </div>
-                  
-                  <div className={styles.actions} style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                    <div className={styles.tag} style={{ color: '#22c55e', border: '1px solid #1a3320' }}>
+                  <div className={styles.metaInfo}>
+                    <div className={styles.infoTag} style={{ color: '#22c55e', border: '1px solid #1a3320' }}>
                       <Shield size={14} /> {player.hp || 0}/{player.max_hp || 0}
                     </div>
-                    <div className={styles.tag} style={{ color: '#3b82f6', border: '1px solid #1a2033' }}>
+                    <div className={styles.infoTag} style={{ color: '#3b82f6', border: '1px solid #1a2033' }}>
                       <Zap size={14} /> {player.cp || 0}/{player.max_cp || 0}
                     </div>
                   </div>
+                </div>
+
+                {/* BOTÃO HOVER ANIMADO DO SEU CSS */}
+                <div className={styles.cardFooter}>
+                  Ver Ficha Completa
                 </div>
               </Link>
             ))}
