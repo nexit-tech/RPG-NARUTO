@@ -1,74 +1,112 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, ChevronRight, Swords } from 'lucide-react';
+import { ArrowLeft, Users, Swords, Map, BookOpen, Settings, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import styles from './styles.module.css';
 
-interface Personagem {
-  id: number;
+interface Campanha {
+  id: string;
   nome: string;
-  aldeia: string;
+  descricao: string;
+  mestre: string;
   rank: string;
-  avatar: string;
+  nivel: number;
+  jogadores: number;
+  status: string;
+  banner_url: string;
 }
 
-// Mock — futuramente virá do banco
-const PERSONAGENS: Personagem[] = [
-  { id: 1, nome: 'Naruto Uzumaki',  aldeia: 'Konoha',   rank: 'Genin',    avatar: 'https://i.pinimg.com/originals/d2/b3/b4/d2b3b47c30e4fba17e6f2d35af651a35.jpg' },
-  { id: 2, nome: 'Sasuke Uchiha',   aldeia: 'Konoha',   rank: 'Genin',    avatar: 'https://i.pinimg.com/736x/8e/4b/c8/8e4bc8f5b4cf1e22e7f5c7a40a8da8ef.jpg' },
-  { id: 3, nome: 'Sakura Haruno',   aldeia: 'Konoha',   rank: 'Genin',    avatar: 'https://i.pinimg.com/736x/fa/98/1b/fa981b6e0e4e2b0f50a46b12b26dfc44.jpg' },
-  { id: 4, nome: 'Rock Lee',        aldeia: 'Konoha',   rank: 'Genin',    avatar: 'https://i.pinimg.com/736x/5e/bb/b8/5ebbb85fc3a4b7de72d6ee22c8c1b32b.jpg' },
-];
+export default function AdminCampanhaPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
 
-const RANK_COLORS: Record<string, string> = {
-  Genin: '#44ff88', Chunin: '#ffcc00', Jonin: '#00ccff',
-  Kage: '#ff6600', Anbu: '#aa44ff',
-};
+  const [campanha, setCampanha] = useState<Campanha | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default function CampanhaPersonagensPage({ params }: { params: { campanhaId: string } }) {
+  useEffect(() => {
+    if (id) fetchCampanha();
+  }, [id]);
+
+  async function fetchCampanha() {
+    const { data, error } = await supabase
+      .from('campanhas')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      router.push('/adminpage');
+      return;
+    }
+
+    setCampanha(data);
+    setLoading(false);
+  }
+
+  if (loading) {
+    return (
+      <div className={styles.loadingScreen}>
+        <Loader2 size={40} className={styles.spinner} />
+        <span>Carregando campanha...</span>
+      </div>
+    );
+  }
+
+  if (!campanha) return null;
+
+  const menuItems = [
+    { icon: <Users size={28} />, label: 'Jogadores', sub: 'Fichas e personagens', href: `/admin-campanha/${id}/players` },
+    { icon: <Swords size={28} />, label: 'Sessão Ativa', sub: 'Mapa e combate', href: `/admin-campanha/${id}/sessao-ativa` },
+    { icon: <Map size={28} />, label: 'Estratégia', sub: 'Mapas e anotações', href: `/admin-campanha/${id}/estrategia` },
+    { icon: <BookOpen size={28} />, label: 'NPCs', sub: 'Personagens do mestre', href: `/admin-campanha/${id}/npcs` },
+    { icon: <Settings size={28} />, label: 'Mobs', sub: 'Inimigos e criaturas', href: `/admin-campanha/${id}/mobs` },
+  ];
+
   return (
     <main className={styles.container}>
-      <header className={styles.header}>
-        <Link href="/player" className={styles.backLink}>
-          <ArrowLeft size={20} /> Campanhas
-        </Link>
-        <div className={styles.titleArea}>
-          <h1 className={styles.pageTitle}>Escolha seu Personagem</h1>
-          <p className={styles.subTitle}>Selecione o ninja que você irá interpretar</p>
+      {/* BANNER HERO */}
+      <div className={styles.hero}>
+        {campanha.banner_url && (
+          <img src={campanha.banner_url} alt={campanha.nome} className={styles.heroBg} />
+        )}
+        <div className={styles.heroOverlay} />
+        <div className={styles.heroContent}>
+          <Link href="/adminpage" className={styles.backLink}>
+            <ArrowLeft size={18} /> Missões
+          </Link>
+          <div className={styles.badges}>
+            <span className={styles.badge}>{campanha.rank}</span>
+            <span className={styles.badge}>Nível {campanha.nivel}</span>
+            <span className={`${styles.badge} ${styles.badgeStatus}`}>{campanha.status}</span>
+          </div>
+          <h1 className={styles.heroTitle}>{campanha.nome}</h1>
+          {campanha.descricao && (
+            <p className={styles.heroDesc}>{campanha.descricao}</p>
+          )}
+          <div className={styles.heroMeta}>
+            <span><Users size={14} /> {campanha.jogadores} Jogadores</span>
+            {campanha.mestre && <span>Mestre: {campanha.mestre}</span>}
+          </div>
         </div>
-        <div style={{ width: 120 }} />
-      </header>
-
-      <div className={styles.grid}>
-        {PERSONAGENS.map(p => {
-          const rankColor = RANK_COLORS[p.rank] || '#888';
-          return (
-            <Link key={p.id} href={`/player/${params.campanhaId}/${p.id}`} className={styles.card}>
-              {/* AVATAR */}
-              <div className={styles.avatarWrap}>
-                <img src={p.avatar} alt={p.nome} className={styles.avatar} />
-                <div className={styles.avatarGlow} style={{ boxShadow: `0 0 30px ${rankColor}33` }} />
-              </div>
-
-              {/* INFO */}
-              <div className={styles.cardInfo}>
-                <h2 className={styles.cardName}>{p.nome}</h2>
-                <div className={styles.cardMeta}>
-                  <span className={styles.aldeia}><Swords size={12} /> {p.aldeia}</span>
-                  <span className={styles.rank} style={{ color: rankColor, borderColor: rankColor }}>
-                    {p.rank}
-                  </span>
-                </div>
-              </div>
-
-              <div className={styles.cardEnter}>
-                <ChevronRight size={20} />
-              </div>
-            </Link>
-          );
-        })}
       </div>
+
+      {/* MENU DE SEÇÕES */}
+      <section className={styles.menuGrid}>
+        {menuItems.map((item) => (
+          <Link key={item.label} href={item.href} className={styles.menuCard}>
+            <div className={styles.menuIcon}>{item.icon}</div>
+            <div className={styles.menuText}>
+              <span className={styles.menuLabel}>{item.label}</span>
+              <span className={styles.menuSub}>{item.sub}</span>
+            </div>
+            <ArrowLeft size={16} className={styles.menuArrow} />
+          </Link>
+        ))}
+      </section>
     </main>
   );
 }

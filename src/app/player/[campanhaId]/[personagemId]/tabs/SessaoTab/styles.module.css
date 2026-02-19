@@ -1,7 +1,5 @@
-/* Idêntico ao sessao-ativa/styles.module.css */
-
 .layout {
-  height: 100%;
+  height: calc(100vh - 57px); /* desconta o header da página */
   display: flex;
   flex-direction: column;
   background-color: #050505;
@@ -16,7 +14,6 @@
   display: flex; align-items: center; justify-content: center;
   z-index: 10;
   box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-  margin-bottom: 10px;
   flex-shrink: 0;
 }
 
@@ -47,16 +44,25 @@
   border-radius: 8px;
   position: relative;
   min-height: 0;
+  flex: 1;
 }
 
 .areaMap {
   flex: 1;
   position: relative;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
   overflow: hidden;
   background: #000;
   border: 2px solid #333;
   transition: border-color 0.3s;
+  min-height: 0;
+}
+
+.areaMap > * {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .areaLog {

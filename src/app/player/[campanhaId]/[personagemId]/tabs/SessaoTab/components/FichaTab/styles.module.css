@@ -4,9 +4,47 @@
   width: 100%;
 }
 
+/* ── NAVEGAÇÃO DE PÁGINAS ── */
+.pageNav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #1a1a1a;
+  background: #080808;
+  padding: 0 2rem;
+}
+
+.pageBtn {
+  background: transparent;
+  border: none;
+  padding: 0.9rem 2rem;
+  color: #555;
+  font-weight: 800;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  font-family: var(--font-montserrat);
+  position: relative;
+  transition: color 0.2s;
+}
+.pageBtn:hover { color: #aaa; }
+
+.pageBtnActive {
+  color: #ff6600;
+}
+.pageBtnActive::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%; height: 2px;
+  background: #ff6600;
+  box-shadow: 0 0 8px rgba(255, 102, 0, 0.6);
+}
+
+/* ── CONTEÚDO ── */
 .pageContent {
   flex: 1;
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.25s ease-out;
 }
 
 @keyframes fadeIn {

@@ -1,7 +1,6 @@
 /* --- LAYOUT PRINCIPAL (Fundo Preto Ninja) --- */
 .container {
   min-height: 100vh;
-  /* Preto quase absoluto com um leve gradiente radial no topo */
   background-color: #050505;
   background-image: radial-gradient(circle at 50% -20%, #2a1000 0%, #050505 60%);
   color: #f0f0f0;
@@ -15,7 +14,7 @@
   justify-content: space-between;
   align-items: flex-end;
   margin-bottom: 3rem;
-  border-bottom: 1px solid #222; /* Linha sutil para não brigar com o preto */
+  border-bottom: 1px solid #222;
   padding-bottom: 1rem;
 }
 
@@ -24,7 +23,6 @@
   color: #ff6600;
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
-  /* Glow laranja no texto */
   text-shadow: 0 0 15px rgba(255, 102, 0, 0.5);
 }
 
@@ -34,7 +32,7 @@
   letter-spacing: 0.5px;
 }
 
-/* --- BOTÃO DE CRIAR (PRINCIPAL) --- */
+/* --- BOTÃO DE CRIAR --- */
 .createBtn {
   background: linear-gradient(135deg, #ff6600, #cc5200);
   color: #000;
@@ -55,7 +53,7 @@
 
 .createBtn:hover {
   background: #ff8533;
-  box-shadow: 0 0 20px rgba(255, 102, 0, 0.6); /* Chakra explodindo */
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.6);
   transform: translateY(-2px);
 }
 
@@ -66,6 +64,52 @@
   gap: 1.5rem;
   max-width: 1000px;
   margin: 0 auto;
+}
+
+/* --- LOADING STATE --- */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 6rem;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* --- EMPTY STATE --- */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 6rem;
+  color: #333;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px dashed #1a1a1a;
+  border-radius: 8px;
+}
+.emptyState small {
+  color: #222;
+  font-size: 0.75rem;
+  text-transform: none;
+  font-weight: 400;
+}
+
+/* --- SPINNER --- */
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* =========================================
@@ -88,7 +132,6 @@
   transition: color 0.3s;
 }
 
-/* Efeito: Quando clica no input, o label fica laranja */
 .formGroup:focus-within label {
   color: #ff6600;
   text-shadow: 0 0 8px rgba(255, 102, 0, 0.4);
@@ -97,13 +140,14 @@
 .input {
   width: 100%;
   padding: 1rem;
-  background-color: #080808; /* Fundo bem escuro para o input */
+  background-color: #080808;
   border: 1px solid #333;
   color: #f0f0f0;
   border-radius: 4px;
   font-family: var(--font-montserrat);
   font-size: 0.95rem;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .input::placeholder {
@@ -114,10 +158,10 @@
   outline: none;
   border-color: #ff6600;
   background-color: #0a0a0a;
-  box-shadow: 0 0 15px rgba(255, 102, 0, 0.15); /* Glow sutil */
+  box-shadow: 0 0 15px rgba(255, 102, 0, 0.15);
 }
 
-/* --- BOTÃO DE CONFIRMAR (DENTRO DO MODAL) --- */
+/* --- BOTÃO SUBMIT --- */
 .submitBtn {
   width: 100%;
   padding: 1rem;
@@ -134,12 +178,21 @@
   cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 4px 15px rgba(255, 69, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.submitBtn:hover {
+.submitBtn:hover:not(:disabled) {
   background: linear-gradient(90deg, #ff8533, #ff6600);
   transform: translateY(-2px);
-  box-shadow: 0 0 25px rgba(255, 69, 0, 0.5); /* Brilho intenso */
+  box-shadow: 0 0 25px rgba(255, 69, 0, 0.5);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* --- AÇÕES DE DELETE/CANCELAR --- */
@@ -172,7 +225,7 @@
 
 .confirmDeleteBtn {
   padding: 0.8rem 2rem;
-  background: #800; /* Vermelho escuro base */
+  background: #800;
   color: #fff;
   border: none;
   cursor: pointer;
@@ -182,10 +235,18 @@
   text-transform: uppercase;
   transition: all 0.2s;
   box-shadow: 0 0 10px rgba(136, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.confirmDeleteBtn:hover {
-  background: #ff0000; /* Vermelho sangue vivo */
+.confirmDeleteBtn:hover:not(:disabled) {
+  background: #ff0000;
   box-shadow: 0 0 25px rgba(255, 0, 0, 0.6);
   transform: scale(1.05);
+}
+
+.confirmDeleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
