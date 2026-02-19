@@ -19,7 +19,6 @@ import QuickSheetModal from './components/QuickSheetModal';
 import InitiativeModal from './components/InitiativeModal';
 
 export default function ActiveSessionPage({ params }: { params: Promise<{ campanhaId: string }> }) {
-  // Desempacotamento seguro dos params (Exigência do Next 15)
   const resolvedParams = use(params);
   const campanhaId = resolvedParams?.campanhaId;
 
@@ -49,7 +48,6 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
   const [sheetModalOpen, setSheetModalOpen] = useState(false);
   const [initModalOpen, setInitModalOpen] = useState(false);
 
-  // Canal de Realtime
   const channelRef = useRef<any>(null);
 
   // --- BUSCA INICIAL DE DADOS E REALTIME ---
@@ -163,13 +161,11 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
 
   const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
 
-  // Segurança extra: Garante que os arrays não fiquem undefined
   const safeTokens = tokens || [];
   const displayedTokens = combatActive 
     ? safeTokens.filter(t => t.inCombat !== false) 
     : safeTokens;
 
-  // Previne leitura de index vazio se a lista de tokens estiver vazia
   const safeTurnIndex = (displayedTokens.length > 0 && currentTurnIndex < displayedTokens.length) 
     ? currentTurnIndex 
     : 0;
@@ -209,6 +205,36 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
     if (sessionId) await supabase.from('sessoes').update({ combat_active: newState, current_turn_index: 0 }).eq('id', sessionId);
     if (newState) addLog("⚔️ Mestre iniciou o Combate!");
     else addLog("🕊️ Combate finalizado. Modo Exploração.");
+  };
+
+  // --- INICIATIVA ---
+  const handleInitiativeConfirm = async (updates: { id: string, initiative: number, inCombat: boolean }[]) => {
+    // Atualiza estado local primeiro
+    setTokens(prev => {
+      const newTokens = prev.map(t => {
+        const update = updates.find(u => u.id === t.id);
+        if (update) {
+          return { ...t, initiative: update.initiative, inCombat: update.inCombat };
+        }
+        return t;
+      });
+      // Reordena do maior para o menor
+      return newTokens.sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
+    });
+
+    // Atualiza o DB
+    for (const update of updates) {
+      supabase.from('sessao_tokens')
+        .update({ initiative: update.initiative, in_combat: update.inCombat })
+        .eq('id', update.id);
+    }
+
+    setInitModalOpen(false);
+    setCurrentTurnIndex(0);
+    if (sessionId) {
+      supabase.from('sessoes').update({ current_turn_index: 0 }).eq('id', sessionId);
+    }
+    addLog(`🎲 Ordem de turnos e iniciativas atualizadas!`);
   };
 
   // --- AÇÕES DO MAPA ---
@@ -263,7 +289,34 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
     setInteractionMode('move');
   };
 
-  // --- SPAWN (INVOCAÇÃO) COM CLIQUE ---
+  const handleAoEConfirm = async (damages: Record<string, number>) => {
+    const updates: { id: string, name: string, hp: number, damage: number }[] = [];
+
+    setTokens(prev => {
+      const newTokens = [...prev];
+      Object.entries(damages).forEach(([targetId, damage]) => {
+        const tIndex = newTokens.findIndex(t => t.id === targetId);
+        if (tIndex > -1) {
+          const target = newTokens[tIndex];
+          const newHp = Math.max(0, target.hp - damage);
+          newTokens[tIndex] = { ...target, hp: newHp };
+          updates.push({ id: targetId, name: target.name, hp: newHp, damage });
+        }
+      });
+      return newTokens;
+    });
+
+    for (const update of updates) {
+      addLog(`💥 ${update.name} sofreu ${update.damage} de dano em área!`);
+      supabase.from('sessao_tokens').update({ hp: update.hp }).eq('id', update.id);
+    }
+
+    if (updates.length === 0) addLog(`💨 O ataque em área não causou dano a ninguém.`);
+    
+    setAoeModal({ ...aoeModal, isOpen: false });
+    setInteractionMode('move');
+  };
+
   const handleSelectEntityToSpawn = (dbTemplate: any, type: 'mob' | 'npc') => {
     setPendingSpawn({ dbTemplate, type });
     setInteractionMode('spawn');
@@ -413,11 +466,19 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
         </aside>
       </div>
       
+      {/* MODAIS GERAIS RENDERIZADOS AQUI */}
       <QuickSheetModal 
         campanhaId={campanhaId}
         isOpen={sheetModalOpen} 
         onClose={() => setSheetModalOpen(false)} 
         token={currentCharacter}
+      />
+
+      <InitiativeModal
+        isOpen={initModalOpen}
+        tokens={tokens}
+        onClose={() => setInitModalOpen(false)}
+        onConfirm={handleInitiativeConfirm}
       />
     </main>
   );

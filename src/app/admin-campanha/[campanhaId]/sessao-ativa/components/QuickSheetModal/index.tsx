@@ -7,7 +7,6 @@ import PageOne from '../../../players/[id]/components/PageOne';
 import PageTwo from '../../../players/[id]/components/PageTwo';
 import PageThree from '../../../players/[id]/components/PageThree';
 
-// Estrutura em branco para garantir que a ficha não quebre caso falte algum dado
 const BLANK_DATA = {
   info: { name: '', img: '' },
   attributes: { for: 0, des: 0, agi: 0, per: 0, int: 0, vig: 0, esp: 0 },
@@ -39,15 +38,15 @@ export default function QuickSheetModal({ campanhaId, isOpen, onClose, token }: 
     if (dbData) {
       const hab = dbData.habilidades || dbData.ficha_data || {};
       
-      // Mescla o template com os dados salvos para garantir consistência
+      // Mescla o template com os dados salvos garantindo que "skills" não suma
       const merged = { 
         ...BLANK_DATA, 
         ...hab, 
+        skills: hab.skills || hab.pericias || BLANK_DATA.skills, // Proteção extra pras perícias!
         info: { ...BLANK_DATA.info, ...hab.info, name: dbData.nome, img: dbData.img },
         combatStats: {
           ...BLANK_DATA.combatStats,
           ...hab.combatStats,
-          // Garante que o HP/CP do db atualize a tela
           vitCurrent: dbData.hp ?? hab.combatStats?.vitCurrent,
           vitTotal: dbData.max_hp ?? hab.combatStats?.vitTotal,
           chaCurrent: dbData.cp ?? hab.combatStats?.chaCurrent,

@@ -1,76 +1,69 @@
 .layout {
-  height: calc(100vh - 57px); /* desconta o header da página */
   display: flex;
   flex-direction: column;
-  background-color: #050505;
+  height: calc(100vh - 80px); /* Ajuste com o seu Header */
+  background-color: #0f0f0f;
   color: #fff;
   overflow: hidden;
+  border-radius: 8px;
 }
 
 .areaInitiative {
-  height: 110px;
-  background: #0a0a0a;
-  border-bottom: 2px solid #ff6600;
-  display: flex; align-items: center; justify-content: center;
-  z-index: 10;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+  background: #1a1a1a;
+  border-bottom: 2px solid #333;
+  padding: 10px;
   flex-shrink: 0;
 }
 
 .mainGrid {
+  display: flex;
   flex: 1;
-  display: grid;
-  grid-template-columns: 280px 1fr 320px;
-  gap: 15px;
-  padding: 15px;
   overflow: hidden;
-  min-height: 0;
 }
 
 .areaControls {
-  background: #080808;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex; flex-direction: column;
+  width: 250px;
+  background: #111;
+  border-right: 2px solid #333;
+  padding: 15px;
   overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .centerCol {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  overflow: hidden;
-  border-radius: 8px;
   position: relative;
-  min-height: 0;
-  flex: 1;
+  overflow: hidden;
 }
 
 .areaMap {
   flex: 1;
   position: relative;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
   overflow: hidden;
-  background: #000;
-  border: 2px solid #333;
-  transition: border-color 0.3s;
-  min-height: 0;
-}
-
-.areaMap > * {
-  width: 100% !important;
-  height: 100% !important;
+  background-color: #000;
 }
 
 .areaLog {
-  background: #080808;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 0;
-  display: flex; flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
+  width: 300px;
+  background: #111;
+  border-left: 2px solid #333;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #ff6600;
+}
+
+.loadingContainer p {
+  margin-top: 10px;
+  color: #fff;
 }

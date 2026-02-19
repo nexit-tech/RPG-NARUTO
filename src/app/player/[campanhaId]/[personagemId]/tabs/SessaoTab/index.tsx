@@ -1,218 +1,242 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import styles from './styles.module.css';
 
-// Reutiliza TODOS os componentes do admin
+// Pegando EXATAMENTE os mesmos componentes do Mestre
 import InitiativeTracker from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/InitiativeTracker';
 import BattleMap, { Token } from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/BattleMap';
 import CombatLog from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/CombatLog';
 import CurrentTurnPanel from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/CurrentTurnPanel';
-import ActionModal from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/ActionModal';
-import AoEActionModal from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/AoEActionModal';
-import InitiativeModal from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/InitiativeModal';
 import QuickSheetModal from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/QuickSheetModal';
 
-// Painel de comandos exclusivo do player (sem Derrubar e sem Mapa & Grid)
+// O único diferente é o controle lateral
 import PlayerControls from './components/PlayerControls';
 
-import styles from './styles.module.css';
+interface SessaoTabProps {
+  campanhaId: string;
+  personagemId: string;
+}
 
-// Mock idêntico ao admin — no futuro virá do banco em tempo real
-const INITIAL_CHARACTERS: Token[] = [
-  {
-    id: 'p1', name: 'Sasuke', type: 'player',
-    img: 'https://imgs.search.brave.com/HIiVnoJFxGOfdSvGo_TvR6H0ETyr8ajAclCUTASKdp0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS50ZW5vci5jb20v/ZXlKak5EMUN6U2tB/QUFBTS9zYXN1a2Ut/dWNoaWhhLmdpZg.gif',
-    hp: 80, maxHp: 100, cp: 150, maxCp: 180,
-    x: 4, y: 6, level: 20, class: 'Vingador',
-    stats: { atk: 22, def: 18, esq: 25, cd: 16 },
-    initiative: 0, inCombat: true, isDown: false,
-  },
-  {
-    id: 'p2', name: 'Naruto', type: 'player',
-    img: 'https://imgs.search.brave.com/oeorTa8qLitRgjIz4ApXVeErnXx7JXBTS-Zow0OLM-4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzL2IwLzdl/LzNmL2IwN2UzZmYy/MTYzZDg0MGFlMTll/MmU2YWQ3OTYwMWY1/LmpwZw',
-    hp: 180, maxHp: 200, cp: 450, maxCp: 500,
-    x: 5, y: 7, level: 20, class: 'Hokage',
-    stats: { atk: 20, def: 20, esq: 18, cd: 14 },
-    initiative: 0, inCombat: true, isDown: false,
-  },
-];
+export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) {
+  const [loading, setLoading] = useState(true);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
-export default function SessaoTab() {
-  const [tokens, setTokens] = useState<Token[]>(INITIAL_CHARACTERS);
+  // Estados sincronizados com o Mestre
+  const [tokens, setTokens] = useState<Token[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
-  const [mapUrl] = useState('https://i.pinimg.com/originals/99/3a/05/993a059c03db26993952dc67b931920d.jpg');
-  const [showGrid] = useState(true);
-  const [logs, setLogs] = useState<string[]>(['Sessão iniciada.']);
-  const [combatActive] = useState(false); // Player não controla isso
-
-  const [interactionMode, setInteractionMode] = useState<
-    'move' | 'attack' | 'heal' | 'aoe_cone' | 'aoe_circle' | 'aoe_line'
-  >('move');
-
-  // Modais
-  const [actionModal, setActionModal] = useState<any>({ isOpen: false, type: null, targetId: null });
-  const [aoeModal, setAoeModal] = useState<any>({ isOpen: false, targets: [], shape: '' });
-  const [initModalOpen, setInitModalOpen] = useState(false);
+  const [mapUrl, setMapUrl] = useState('https://i.pinimg.com/originals/99/3a/05/993a059c03db26993952dc67b931920d.jpg');
+  const [showGrid, setShowGrid] = useState(true);
+  const [gridScale, setGridScale] = useState(1.0);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [combatActive, setCombatActive] = useState(false);
+  
+  const [logs, setLogs] = useState<string[]>(["Sessão conectada. Aguardando o Mestre..."]);
   const [sheetModalOpen, setSheetModalOpen] = useState(false);
 
-  const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
+  const channelRef = useRef<any>(null);
 
-  const displayedTokens = tokens.filter(t => t.inCombat !== false);
-  const safeTurnIndex = currentTurnIndex >= displayedTokens.length ? 0 : currentTurnIndex;
-  const currentCharacter = displayedTokens[safeTurnIndex];
-
-  const nextTurn = () => {
-    if (displayedTokens.length === 0) return;
-    setCurrentTurnIndex((safeTurnIndex + 1) % displayedTokens.length);
-  };
-
-  const prevTurn = () => {
-    setCurrentTurnIndex((safeTurnIndex - 1 + displayedTokens.length) % displayedTokens.length);
-  };
-
-  const handleTokenAction = (action: 'attack' | 'heal' | 'down', targetId: string) => {
-    // Player não pode derrubar — ignora silenciosamente
-    if (action === 'down') return;
-    setActionModal({ isOpen: true, type: action, targetId });
-  };
-
-  const handleAoEComplete = (targets: Token[], shape: string) => {
-    if (targets.length === 0) { addLog('💨 AoE falhou (0 alvos).'); return; }
-    setAoeModal({ isOpen: true, targets, shape });
-    setInteractionMode('move');
-  };
-
-  const handleAoEConfirm = (damages: Record<string, number>) => {
-    const hitNames: string[] = [];
-    setTokens(prev => prev.map(t => {
-      const dmg = damages[t.id];
-      if (dmg !== undefined && dmg > 0) {
-        hitNames.push(`${t.name} (-${dmg})`);
-        return { ...t, hp: Math.max(0, t.hp - dmg) };
-      }
-      return t;
-    }));
-    if (hitNames.length > 0) addLog(`💥 AoE: ${hitNames.join(', ')}.`);
-    setAoeModal({ ...aoeModal, isOpen: false });
-  };
-
-  const handleModalConfirm = (value: number, isHit: boolean) => {
-    const { type, targetId } = actionModal;
-    const target = tokens.find(t => t.id === targetId);
-    if (target && type) {
-      if (type === 'attack') {
-        if (isHit) {
-          setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: Math.max(0, t.hp - value) } : t));
-          addLog(`⚔️ Acerto em ${target.name} (-${value} PV)!`);
-        } else {
-          addLog(`🛡️ Ataque falhou em ${target.name}.`);
-        }
-      } else if (type === 'heal') {
-        setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: Math.min(t.maxHp, t.hp + value) } : t));
-        addLog(`💚 ${target.name} recuperou ${value} PV.`);
-      }
+  useEffect(() => {
+    if (campanhaId) {
+      fetchSessionData();
+    } else {
+      console.warn("Aguardando carregar ID da campanha...");
     }
-    setActionModal({ ...actionModal, isOpen: false });
-    setInteractionMode('move');
+  }, [campanhaId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const channel = supabase.channel(`mesa-${sessionId}`, {
+      config: { broadcast: { self: false } }
+    });
+
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessao_tokens', filter: `sessao_id=eq.${sessionId}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const t = payload.new;
+          setTokens(prev => {
+            if (prev.some(existing => existing.id === t.id)) return prev;
+            const newToken: Token = {
+              id: t.id, originalId: t.personagem_id || t.npc_id || t.mob_id,
+              originalTable: t.personagem_id ? 'players' : (t.npc_id ? 'npcs' : 'mobs'),
+              name: t.nome, type: t.token_type === 'enemy' || t.token_type === 'mob' ? 'enemy' : 'player',
+              img: t.img, x: t.map_x, y: t.map_y,
+              hp: t.hp, maxHp: t.max_hp, cp: t.cp, maxCp: t.max_cp,
+              level: t.level, class: t.class, stats: { atk: t.atk, def: t.def, esq: t.esq, cd: t.cd },
+              initiative: t.initiative || 0, inCombat: t.in_combat, isDown: t.is_down
+            };
+            return [...prev, newToken].sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
+          });
+        } 
+        else if (payload.eventType === 'UPDATE') {
+          const t = payload.new;
+          setTokens(prev => {
+              const updated = prev.map(existing => existing.id === t.id ? {
+                  ...existing, x: t.map_x, y: t.map_y, hp: t.hp, cp: t.cp,
+                  inCombat: t.in_combat, isDown: t.is_down, initiative: t.initiative
+              } : existing);
+              return updated.sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
+          });
+        } 
+        else if (payload.eventType === 'DELETE') {
+          setTokens(prev => prev.filter(existing => existing.id !== payload.old.id));
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessoes', filter: `id=eq.${sessionId}` }, (payload) => {
+        const s = payload.new;
+        if (s.map_url) setMapUrl(s.map_url);
+        setShowGrid(s.show_grid);
+        setGridScale(s.grid_scale || 1.0);
+        setSnapToGrid(s.snap_to_grid);
+        setCombatActive(s.combat_active);
+        setCurrentTurnIndex(s.current_turn_index || 0);
+      })
+      .on('broadcast', { event: 'token_drag' }, ({ payload }) => {
+        setTokens(prev => prev.map(t => t.id === payload.id ? { ...t, x: payload.x, y: payload.y } : t));
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId]);
+
+  async function fetchSessionData() {
+    try {
+      setLoading(true); // Garante que começa carregando
+      const { data: sessao, error: sessaoErr } = await supabase.from('sessoes').select('*').eq('campanha_id', campanhaId).single();
+
+      if (sessaoErr) {
+        console.warn("Mestre ainda não criou uma sessão ativa no banco para essa campanha.");
+        // Não jogamos erro na tela, apenas deixamos a mesa vazia aguardando!
+      }
+
+      if (sessao) {
+        setSessionId(sessao.id);
+        if (sessao.map_url) setMapUrl(sessao.map_url);
+        setShowGrid(sessao.show_grid);
+        setGridScale(sessao.grid_scale || 1.0);
+        setSnapToGrid(sessao.snap_to_grid);
+        setCombatActive(sessao.combat_active);
+        setCurrentTurnIndex(sessao.current_turn_index || 0);
+
+        const { data: tokensDb } = await supabase.from('sessao_tokens').select('*').eq('sessao_id', sessao.id);
+
+        if (tokensDb) {
+          const mappedTokens: Token[] = tokensDb.map(t => ({
+            id: t.id, originalId: t.personagem_id || t.npc_id || t.mob_id,
+            originalTable: t.personagem_id ? 'players' : (t.npc_id ? 'npcs' : 'mobs'),
+            name: t.nome || 'Desconhecido', type: t.token_type === 'enemy' || t.token_type === 'mob' ? 'enemy' : 'player',
+            img: t.img || 'https://via.placeholder.com/150', x: t.map_x || 0, y: t.map_y || 0,
+            hp: t.hp || 0, maxHp: t.max_hp || 1, cp: t.cp || 0, maxCp: t.max_cp || 1,
+            level: t.level || 1, class: t.class || 'N/A', 
+            stats: { atk: t.atk || 0, def: t.def || 0, esq: t.esq || 0, cd: t.cd || 0 },
+            initiative: t.initiative || 0, inCombat: !!t.in_combat, isDown: !!t.is_down
+          }));
+          setTokens(mappedTokens.sort((a, b) => (b.initiative || 0) - (a.initiative || 0)));
+        }
+      }
+    } catch (err) {
+      console.error("Erro fatal ao carregar a sessão: ", err);
+    } finally {
+      // O SEGREDO TÁ AQUI: Dar erro ou dar bom, o loading para de rodar e a página abre!
+      setLoading(false);
+    }
+  }
+
+  // Identificadores e Travas do Jogador
+  const safeTokens = tokens || [];
+  const myToken = safeTokens.find(t => t.originalId === personagemId);
+  const displayedTokens = combatActive ? safeTokens.filter(t => t.inCombat !== false) : safeTokens;
+  const safeTurnIndex = (displayedTokens.length > 0 && currentTurnIndex < displayedTokens.length) ? currentTurnIndex : 0;
+
+  const handleTokenDrag = (id: string, x: number, y: number) => {
+    const tokenDragged = safeTokens.find(t => t.id === id);
+    if (tokenDragged?.originalId !== personagemId) return; // Só move o próprio boneco
+
+    setTokens(prev => prev.map(t => t.id === id ? { ...t, x, y } : t));
+    if (channelRef.current) {
+      channelRef.current.send({ type: 'broadcast', event: 'token_drag', payload: { id, x, y } });
+    }
   };
 
-  const handleInitiativeConfirm = (updates: { id: string; initiative: number; inCombat: boolean }[]) => {
-    setTokens(prev => {
-      const next = [...prev];
-      updates.forEach(u => {
-        const idx = next.findIndex(t => t.id === u.id);
-        if (idx !== -1) next[idx] = { ...next[idx], initiative: u.initiative, inCombat: u.inCombat };
-      });
-      next.sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
-      return next;
-    });
-    setInitModalOpen(false);
-    setCurrentTurnIndex(0);
-    addLog('📋 Ordem de turno atualizada.');
+  const handleMoveToken = async (id: string, x: number, y: number) => {
+    const tokenMoved = safeTokens.find(t => t.id === id);
+    if (tokenMoved?.originalId !== personagemId) return; // Só atualiza no DB o próprio boneco
+
+    setTokens(prev => prev.map(t => t.id === id ? { ...t, x, y } : t));
+    await supabase.from('sessao_tokens').update({ map_x: x, map_y: y }).eq('id', id);
   };
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Loader2 size={50} className="animate-spin" />
+        <p>Carregando mesa...</p>
+      </div>
+    );
+  }
 
   return (
-    <main className={styles.layout}>
-      {/* TOPO DE INICIATIVA */}
+    <div className={styles.layout}>
+      
+      {/* 1. EM CIMA: Tracker de Iniciativa */}
       <section className={styles.areaInitiative}>
-        <InitiativeTracker
-          order={displayedTokens}
-          currentIndex={safeTurnIndex}
-          onNext={nextTurn}
-          onPrev={prevTurn}
+        <InitiativeTracker 
+          order={displayedTokens} 
+          currentIndex={safeTurnIndex} 
+          onNext={() => {}} 
+          onPrev={() => {}} 
           onOpenSheet={() => setSheetModalOpen(true)}
         />
       </section>
 
       <div className={styles.mainGrid}>
-        {/* PAINEL ESQUERDO — PlayerControls */}
+        
+        {/* 2. NA ESQUERDA: Controles do Jogador */}
         <aside className={styles.areaControls}>
-          <PlayerControls
-            interactionMode={interactionMode}
-            setInteractionMode={setInteractionMode}
-            combatActive={combatActive}
-            onOpenInitiative={() => setInitModalOpen(true)}
-          />
+          <PlayerControls onOpenSheet={() => setSheetModalOpen(true)} />
         </aside>
 
-        {/* CENTRO — Mapa */}
+        {/* 3. NO MEIO: Mapa e as Informações do Jogador */}
         <div className={styles.centerCol}>
-          <section className={styles.areaMap}>
-            <BattleMap
-              imageUrl={mapUrl}
-              showGrid={showGrid}
-              gridScale={1.5}
-              snapToGrid={true}
-              interactionMode={interactionMode as any}
-              tokens={displayedTokens}
-              onMoveToken={(id, x, y) =>
-                setTokens(prev => prev.map(t => t.id === id ? { ...t, x, y } : t))
-              }
-              onTokenAction={handleTokenAction}
-              onAoEComplete={handleAoEComplete}
-              onDeleteToken={() => {}} // Player não deleta tokens
-            />
-
-            {/* Modais */}
-            <ActionModal
-              isOpen={actionModal.isOpen}
-              type={actionModal.type}
-              attackerName={currentCharacter?.name}
-              targetName={tokens.find(t => t.id === actionModal.targetId)?.name || 'Alvo'}
-              onClose={() => setActionModal({ ...actionModal, isOpen: false })}
-              onConfirm={handleModalConfirm}
-            />
-            <AoEActionModal
-              isOpen={aoeModal.isOpen}
-              targets={aoeModal.targets}
-              shape={aoeModal.shape}
-              onClose={() => setAoeModal({ ...aoeModal, isOpen: false })}
-              onConfirm={handleAoEConfirm}
-            />
-            <InitiativeModal
-              isOpen={initModalOpen}
-              tokens={tokens}
-              onClose={() => setInitModalOpen(false)}
-              onConfirm={handleInitiativeConfirm}
+          <section className={`${styles.areaMap} move`}>
+            <BattleMap 
+              imageUrl={mapUrl} showGrid={showGrid} 
+              gridScale={gridScale} snapToGrid={snapToGrid}
+              interactionMode="move"
+              tokens={displayedTokens} 
+              onMoveToken={handleMoveToken}
+              onTokenDrag={handleTokenDrag} 
+              onTokenAction={() => {}} 
+              onAoEComplete={() => {}} 
+              onDeleteToken={async () => {}} 
+              onMapClick={async () => {}} 
             />
           </section>
-
-          <CurrentTurnPanel character={currentCharacter} />
+          
+          {/* Informações de quem tá logado (Ex: Nathan) cravadas lá no fundo */}
+          {myToken && <CurrentTurnPanel character={myToken} />}
         </div>
 
-        {/* DIREITA — Log */}
+        {/* 4. NA DIREITA: Log de Combate */}
         <aside className={styles.areaLog}>
           <CombatLog logs={logs} />
         </aside>
+
       </div>
 
-      <QuickSheetModal
-        isOpen={sheetModalOpen}
-        onClose={() => setSheetModalOpen(false)}
-        characterName={currentCharacter?.name}
+      <QuickSheetModal 
+        campanhaId={campanhaId}
+        isOpen={sheetModalOpen} 
+        onClose={() => setSheetModalOpen(false)} 
+        token={myToken} 
       />
-    </main>
+    </div>
   );
 }
