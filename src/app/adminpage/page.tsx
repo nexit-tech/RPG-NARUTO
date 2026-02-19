@@ -38,21 +38,16 @@ export default function AdminPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [formData, setFormData] = useState({ name: '', rank: '', nivel: '', imageUrl: '' });
+
   const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
 
-  const [formData, setFormData] = useState({
-    nome: '',
-    rank: 'Rank D',
-    nivel: '1',
-    banner_url: ''
-  });
-
+  // ── CARREGAR CAMPANHAS ──────────────────────────────────────────────────────
   useEffect(() => {
     fetchCampaigns();
   }, []);
 
-  // 1. Busca as Campanhas no Supabase
-  const fetchCampaigns = async () => {
+  async function fetchCampaigns() {
     setLoading(true);
     const { data, error } = await supabase
       .from('campanhas')
@@ -61,79 +56,77 @@ export default function AdminPage() {
 
     if (error) {
       console.error('Erro ao buscar campanhas:', error);
-    } else if (data) {
-      setCampaigns(data.map(dbToCampaign));
+    } else {
+      setCampaigns((data ?? []).map(dbToCampaign));
     }
     setLoading(false);
+  }
+
+  // ── NAVEGAÇÃO ───────────────────────────────────────────────────────────────
+  const handleCardClick = (id: string) => {
+    router.push(`/admin-campanha/${id}`);
   };
 
-  const handleOpenCreate = () => {
-    setEditingCampaign(null);
-    setFormData({ nome: '', rank: 'Rank D', nivel: '1', banner_url: '' });
+  // ── ABRIR MODAL ─────────────────────────────────────────────────────────────
+  const openFormModal = (e?: React.MouseEvent, campaign?: Campaign) => {
+    if (e) e.stopPropagation();
+
+    if (campaign) {
+      setEditingCampaign(campaign);
+      // Tenta separar rank e nivel do campo level: "Rank S (Nvl 12)"
+      const match = campaign.level.match(/^(.+?)\s*\(Nvl\s*(\d+)\)$/);
+      setFormData({
+        name: campaign.name,
+        rank: match ? match[1].trim() : campaign.level,
+        nivel: match ? match[2] : '',
+        imageUrl: campaign.imageUrl ?? '',
+      });
+    } else {
+      setEditingCampaign(null);
+      setFormData({ name: '', rank: '', nivel: '', imageUrl: '' });
+    }
     setIsFormOpen(true);
   };
 
-  const handleOpenEdit = (e: React.MouseEvent, camp: Campaign) => {
-    e.stopPropagation(); // Evita que o clique do card seja acionado junto com o do botão
-    setEditingCampaign(camp);
-    
-    // Extrai o rank e o nível da string gerada pelo dbToCampaign
-    const rankMatch = camp.level.split(' (')[0];
-    const nivelMatch = camp.level.match(/\d+/);
-
-    setFormData({
-      nome: camp.name,
-      rank: rankMatch || 'Rank D',
-      nivel: nivelMatch ? nivelMatch[0] : '1',
-      banner_url: camp.imageUrl || ''
-    });
-    setIsFormOpen(true);
-  };
-
-  const handleOpenDelete = (e: React.MouseEvent, camp: Campaign) => {
-    e.stopPropagation(); // Evita que o clique do card seja acionado
-    setCampaignToDelete(camp);
-    setIsDeleteOpen(true);
-  };
-
-  // 2. Salva (Cria ou Edita)
+  // ── SALVAR (CREATE / UPDATE) ─────────────────────────────────────────────────
   const handleSave = async () => {
-    if (!formData.nome) return;
+    if (!formData.name.trim()) return;
     setSaving(true);
 
     const payload = {
-      nome: formData.nome,
+      nome: formData.name,
       rank: formData.rank,
       nivel: parseInt(formData.nivel) || 1,
-      banner_url: formData.banner_url
+      banner_url: formData.imageUrl || null,
     };
 
     if (editingCampaign) {
-      // Atualizar
       const { error } = await supabase
         .from('campanhas')
         .update(payload)
         .eq('id', editingCampaign.id);
 
-      if (!error) {
-        setIsFormOpen(false);
-        fetchCampaigns();
-      }
+      if (error) console.error('Erro ao atualizar:', error);
     } else {
-      // Criar
       const { error } = await supabase
         .from('campanhas')
-        .insert([payload]);
+        .insert({ ...payload, status: 'ativa', jogadores: 0 });
 
-      if (!error) {
-        setIsFormOpen(false);
-        fetchCampaigns();
-      }
+      if (error) console.error('Erro ao criar:', error);
     }
+
+    await fetchCampaigns();
     setSaving(false);
+    setIsFormOpen(false);
   };
 
-  // 3. Exclui Campanha
+  // ── DELETE ───────────────────────────────────────────────────────────────────
+  const openDeleteModal = (e: React.MouseEvent, campaign: Campaign) => {
+    e.stopPropagation();
+    setCampaignToDelete(campaign);
+    setIsDeleteOpen(true);
+  };
+
   const confirmDelete = async () => {
     if (!campaignToDelete) return;
     setSaving(true);
@@ -143,99 +136,91 @@ export default function AdminPage() {
       .delete()
       .eq('id', campaignToDelete.id);
 
-    if (!error) {
-      setIsDeleteOpen(false);
-      setCampaignToDelete(null);
-      fetchCampaigns();
-    } else {
-      console.error("Erro ao deletar:", error);
-    }
+    if (error) console.error('Erro ao deletar:', error);
+
+    await fetchCampaigns();
     setSaving(false);
+    setIsDeleteOpen(false);
+    setCampaignToDelete(null);
   };
 
-  // === 4. AQUI ESTÁ A MÁGICA DO REDIRECIONAMENTO ===
-  const handleCardClick = (id: string) => {
-    // Redireciona enviando o UUID da campanha como parâmetro na URL
-    router.push(`/admin-campanha?id=${id}`);
-  };
-
+  // ── RENDER ───────────────────────────────────────────────────────────────────
   return (
     <main className={styles.container}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Missões e Campanhas</h1>
-        <button className={styles.createBtn} onClick={handleOpenCreate}>
-          <Plus size={20} /> Nova Campanha
+      {/* HEADER */}
+      <header className={styles.topBar}>
+        <div>
+          <h1 className={styles.pageTitle}>Missões Ativas</h1>
+          <p className={styles.subTitle}>Gerenciamento de Campanhas do Servidor</p>
+        </div>
+        <button className={styles.createBtn} onClick={(e) => openFormModal(e)}>
+          <Plus size={20} />
+          <span>Nova Missão</span>
         </button>
       </header>
 
-      {loading ? (
-        <div className={styles.loadingArea}>
-          <Loader2 size={40} className={styles.spinner} />
-          <p>Carregando pergaminhos...</p>
-        </div>
-      ) : (
-        <div className={styles.grid}>
-          {campaigns.length === 0 ? (
-            <p className={styles.emptyMsg}>Nenhuma campanha encontrada. Crie sua primeira missão!</p>
-          ) : (
-            campaigns.map((camp) => (
-              <CampaignCard
-                key={camp.id}
-                data={camp}
-                onClick={() => handleCardClick(camp.id)}
-                onEdit={handleOpenEdit}
-                onDelete={handleOpenDelete}
-              />
-            ))
-          )}
-        </div>
-      )}
+      {/* LISTA */}
+      <section className={styles.listContainer}>
+        {loading ? (
+          <div className={styles.loadingState}>
+            <Loader2 size={32} className={styles.spinner} />
+            <span>Carregando missões...</span>
+          </div>
+        ) : campaigns.length === 0 ? (
+          <div className={styles.emptyState}>
+            <span>Nenhuma campanha encontrada.</span>
+            <small>Clique em "Nova Missão" para começar.</small>
+          </div>
+        ) : (
+          campaigns.map((camp) => (
+            <CampaignCard
+              key={camp.id}
+              data={camp}
+              onEdit={openFormModal}
+              onDelete={openDeleteModal}
+              onClick={() => handleCardClick(camp.id)}
+            />
+          ))
+        )}
+      </section>
 
-      {/* MODAL DE CRIAÇÃO / EDIÇÃO */}
+      {/* MODAL CRIAR / EDITAR */}
       <NinjaModal
         isOpen={isFormOpen}
-        onClose={() => !saving && setIsFormOpen(false)}
-        title={editingCampaign ? 'Editar Campanha' : 'Nova Campanha'}
+        onClose={() => setIsFormOpen(false)}
+        title={editingCampaign ? 'Reescrever Pergaminho' : 'Invocar Nova Missão'}
       >
         <div className={styles.formGroup}>
           <label>Nome da Campanha</label>
           <input
             className={styles.input}
-            type="text"
-            value={formData.nome}
-            onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-            placeholder="Ex: Resgate do Kazekage"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Ex: A Grande Guerra Ninja"
           />
         </div>
 
         <div className={styles.formGroup}>
-          <label>URL do Banner (Opcional)</label>
+          <label>URL da Imagem (Capa)</label>
           <input
             className={styles.input}
-            type="text"
-            value={formData.banner_url}
-            onChange={(e) => setFormData({ ...formData, banner_url: e.target.value })}
+            value={formData.imageUrl}
+            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
             placeholder="https://..."
           />
         </div>
 
-        <div className={styles.row}>
-          <div className={styles.formGroup}>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className={styles.formGroup} style={{ flex: 2 }}>
             <label>Rank</label>
-            <select
-              className={styles.select}
+            <input
+              className={styles.input}
               value={formData.rank}
               onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
-            >
-              <option value="Rank D">Rank D</option>
-              <option value="Rank C">Rank C</option>
-              <option value="Rank B">Rank B</option>
-              <option value="Rank A">Rank A</option>
-              <option value="Rank S">Rank S</option>
-            </select>
+              placeholder="Ex: Rank S, Genin, Kage..."
+            />
           </div>
-
-          <div className={styles.formGroup}>
+          <div className={styles.formGroup} style={{ flex: 1 }}>
             <label>Nível</label>
             <input
               className={styles.input}
@@ -254,10 +239,10 @@ export default function AdminPage() {
         </button>
       </NinjaModal>
 
-      {/* MODAL DE EXCLUSÃO */}
+      {/* MODAL DELETE */}
       <NinjaModal
         isOpen={isDeleteOpen}
-        onClose={() => !saving && setIsDeleteOpen(false)}
+        onClose={() => setIsDeleteOpen(false)}
         title="Queimar Arquivo?"
       >
         <p style={{ color: '#ccc', marginBottom: '20px', lineHeight: '1.5' }}>
@@ -268,7 +253,8 @@ export default function AdminPage() {
         <div className={styles.modalActions}>
           <button className={styles.cancelBtn} onClick={() => setIsDeleteOpen(false)}>Cancelar</button>
           <button className={styles.confirmDeleteBtn} onClick={confirmDelete} disabled={saving}>
-            {saving ? <Loader2 size={16} className={styles.spinner} /> : 'Excluir'}
+            {saving ? <Loader2 size={16} className={styles.spinner} /> : null}
+            Excluir
           </button>
         </div>
       </NinjaModal>
