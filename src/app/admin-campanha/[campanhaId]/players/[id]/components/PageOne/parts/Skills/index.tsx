@@ -2,21 +2,42 @@ import React, { useEffect } from 'react';
 import { Zap } from 'lucide-react';
 import styles from './styles.module.css';
 
+// Lista EXATA das perícias do seu sistema
+const DEFAULT_SKILLS = [
+  { name: 'Acrobacia', attr: 'agi', pontos: 0, other: 0, total: 0 },
+  { name: 'Arte', attr: 'int', pontos: 0, other: 0, total: 0 },
+  { name: 'Atletismo', attr: 'for', pontos: 0, other: 0, total: 0 },
+  { name: 'Ciências Naturais', attr: 'int', pontos: 0, other: 0, total: 0 },
+  { name: 'Concentração', attr: 'esp', pontos: 0, other: 0, total: 0 },
+  { name: 'Cultura', attr: 'int', pontos: 0, other: 0, total: 0 },
+  { name: 'Disfarce', attr: 'int', pontos: 0, other: 0, total: 0 },
+  { name: 'Escapar', attr: 'des', pontos: 0, other: 0, total: 0 },
+  { name: 'Furtividade', attr: 'agi', pontos: 0, other: 0, total: 0 },
+  { name: '*Lidar com Animais', attr: 'int', pontos: 0, other: 0, total: 0 },
+  { name: '*Mecanismo', attr: 'int', pontos: 0, other: 0, total: 0 },
+  { name: '*Medicina', attr: 'int', pontos: 0, other: 0, total: 0 },
+  { name: '*Ocultismo', attr: 'int', pontos: 0, other: 0, total: 0 },
+  { name: 'Prestidigitação', attr: 'des', pontos: 0, other: 0, total: 0 },
+  { name: 'Procurar', attr: 'per', pontos: 0, other: 0, total: 0 },
+  { name: 'Prontidão', attr: 'per', pontos: 0, other: 0, total: 0 },
+  { name: 'Rastrear', attr: 'per', pontos: 0, other: 0, total: 0 },
+  { name: '**Venefício', attr: 'int', pontos: 0, other: 0, total: 0 }
+];
+
 export default function Skills({ data, attributes, isEditing, onChange }: any) {
-  
-  // Calcula os valores automaticamente sempre que os atributos ou dados mudam
+  // Se a ficha vier vazia, assume a lista padrão. Se tiver, usa a do banco.
+  const currentData = (data && data.length > 0) ? data : DEFAULT_SKILLS;
+
   useEffect(() => {
-    if (!attributes || !data || !Array.isArray(data)) return;
-    
+    if (!attributes) return;
+
     let changed = false;
-    const nextData = data.map((skill: any) => {
+    const nextData = currentData.map((skill: any) => {
       const defaultAttr = skill.attr ? skill.attr.toLowerCase() : 'int';
       const attrKey = skill.attrKey || defaultAttr;
       const attrVal = Number(attributes[attrKey]) || 0;
-      
-      // Metade do atributo arredondado para baixo
       const attrBonus = Math.floor(attrVal / 2);
-      
+
       const pontosVal = Number(skill.pontos) || 0;
       const otherVal = Number(skill.other) || 0;
       const total = pontosVal + attrBonus + otherVal;
@@ -28,20 +49,18 @@ export default function Skills({ data, attributes, isEditing, onChange }: any) {
       return skill;
     });
 
-    if (changed) {
-      onChange(nextData);
+    if (changed || (!data || data.length === 0)) {
+      if (onChange) onChange(nextData);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attributes]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attributes, data]);
 
   const handleSkillChange = (index: number, field: string, val: string) => {
-    const newData = [...data];
+    const newData = [...currentData];
     const skill = { ...newData[index] };
     
-    // Se for trocar FOR/DES guarda string, senão guarda número
     skill[field] = field === 'attrKey' ? val : Number(val);
     
-    // Recalcula o total na hora
     const defaultAttr = skill.attr ? skill.attr.toLowerCase() : 'int';
     const currentAttrKey = skill.attrKey || defaultAttr;
     const attrVal = Number(attributes?.[currentAttrKey]) || 0;
@@ -58,10 +77,10 @@ export default function Skills({ data, attributes, isEditing, onChange }: any) {
     <div className={styles.subHeader}>
       <div className={styles.colName}>PERÍCIA</div>
       <div className={styles.colData}>
-        <span style={{width: '35px'}}>TOT</span>
-        <span style={{flex:1}}>PTS</span>
-        <span style={{width: '30px'}}>ATR</span>
-        <span style={{flex:1}}>OUT</span>
+        <span>TOT</span>
+        <span>PTS</span>
+        <span>ATR</span>
+        <span>OUT</span>
       </div>
     </div>
   );
@@ -69,7 +88,7 @@ export default function Skills({ data, attributes, isEditing, onChange }: any) {
   return (
     <div className={styles.card}>
       <div className={styles.header}>
-        <Zap size={20} /> <span>PERÍCIAS GERAIS</span>
+        <Zap size={20} color="#ff6600" /> <span>PERÍCIAS GERAIS</span>
       </div>
       
       <div className={styles.headerRow}>
@@ -78,7 +97,7 @@ export default function Skills({ data, attributes, isEditing, onChange }: any) {
       </div>
 
       <div className={styles.gridList}>
-        {data?.map((s: any, idx: number) => {
+        {currentData.map((s: any, idx: number) => {
           const defaultAttr = s.attr ? s.attr.toLowerCase() : 'int';
           const currentAttrKey = s.attrKey || defaultAttr;
           
@@ -91,40 +110,37 @@ export default function Skills({ data, attributes, isEditing, onChange }: any) {
               <div className={styles.nameCell}>{s.name}</div>
               
               <div className={styles.calcCell}>
-                
-                {/* TOTAL (Agora é automático, apenas exibe o valor) */}
                 <div className={styles.totalBox}>+{displayTotal}</div>
-                
                 <span className={styles.mathSym}>=</span>
                 
-                {/* PONTOS (Substitui a antiga linha vazia) */}
                 {isEditing ? (
                    <input 
                      type="number" 
                      className={styles.inputAttr} 
-                     style={{ flex: 1, margin: '0 2px' }} /* Usa flex para ocupar o espaço da linha */
                      value={s.pontos || ''} 
                      onChange={e => handleSkillChange(idx, 'pontos', e.target.value)}
                    />
                 ) : (
-                  <div style={{ flex: 1, textAlign: 'center', color: '#ccc', fontSize: '0.75rem', borderBottom: '1px solid #444', margin: '0 3px', paddingBottom: '2px' }}>
-                    {s.pontos || 0}
-                  </div>
+                  <div className={styles.staticValue}>{s.pontos || 0}</div>
                 )}
                 
                 <span className={styles.mathSym}>+</span>
                 
-                {/* ATRIBUTO */}
-                {isEditing && defaultAttr === 'for' ? (
+                {/* Agora você pode alterar qual atributo é usado em TODAS as perícias */}
+                {isEditing ? (
                    <select 
                      className={styles.inputAttr} 
-                     /* Esconde a seta padrão para ficar igual a um input normal */
-                     style={{ padding: 0, cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', textAlign: 'center' }}
                      value={currentAttrKey} 
                      onChange={e => handleSkillChange(idx, 'attrKey', e.target.value)}
+                     style={{ padding: 0, cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
                    >
                      <option value="for">FOR</option>
                      <option value="des">DES</option>
+                     <option value="agi">AGI</option>
+                     <option value="per">PER</option>
+                     <option value="int">INT</option>
+                     <option value="vig">VIG</option>
+                     <option value="esp">ESP</option>
                    </select>
                 ) : (
                   <div className={styles.attrBox} title={`Atributo: ${currentAttrKey.toUpperCase()}`}>
@@ -134,21 +150,16 @@ export default function Skills({ data, attributes, isEditing, onChange }: any) {
                 
                 <span className={styles.mathSym}>+</span>
                 
-                {/* OUTROS (Substitui a antiga linha vazia) */}
                 {isEditing ? (
                    <input 
                      type="number" 
                      className={styles.inputAttr} 
-                     style={{ flex: 1, margin: '0 2px' }} 
                      value={s.other || ''} 
                      onChange={e => handleSkillChange(idx, 'other', e.target.value)}
                    />
                 ) : (
-                  <div style={{ flex: 1, textAlign: 'center', color: '#ccc', fontSize: '0.75rem', borderBottom: '1px solid #444', margin: '0 3px', paddingBottom: '2px' }}>
-                    {s.other || 0}
-                  </div>
+                  <div className={styles.staticValue}>{s.other || 0}</div>
                 )}
-                
               </div>
             </div>
           );

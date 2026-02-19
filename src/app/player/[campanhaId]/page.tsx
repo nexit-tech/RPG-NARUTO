@@ -3,7 +3,6 @@
 import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// Adicionamos os ícones Edit e Trash2!
 import { ArrowLeft, Plus, Loader2, Swords, Users, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import styles from './styles.module.css';
@@ -46,7 +45,6 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
   const [enteringId, setEnteringId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ nome: '', class: '', img: '' });
 
-  // NOVOS ESTADOS PARA EDITAR E EXCLUIR
   const [editingId, setEditingId] = useState<string | null>(null);
   const [charToDelete, setCharToDelete] = useState<Personagem | null>(null);
 
@@ -75,21 +73,18 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
     setLoading(false);
   }
 
-  // ABRIR MODAL DE EDIÇÃO
   function openEditModal(char: Personagem) {
     setFormData({ nome: char.nome, class: char.class, img: char.img });
     setEditingId(char.id);
     setIsCreating(true);
   }
 
-  // FECHAR MODAL DE CRIAÇÃO/EDIÇÃO
   function closeFormModal() {
     setIsCreating(false);
     setEditingId(null);
     setFormData({ nome: '', class: '', img: '' });
   }
 
-  // SALVAR (CRIA OU ATUALIZA)
   async function handleSaveCharacter() {
     if (!formData.nome.trim()) return;
     setSaving(true);
@@ -97,7 +92,6 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
     const finalImg = formData.img || 'https://via.placeholder.com/150?text=Sem+Foto';
 
     if (editingId) {
-      // 🛠️ ATUALIZAR PERSONAGEM EXISTENTE
       const { data, error } = await supabase
         .from('personagens')
         .update({
@@ -112,12 +106,10 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
       if (error) {
         console.error('Erro ao atualizar personagem:', error);
       } else if (data) {
-        // Atualiza a lista na tela imediatamente
         setPersonagens(personagens.map(p => p.id === editingId ? data : p));
         closeFormModal();
       }
     } else {
-      // 🌟 CRIAR NOVO PERSONAGEM (Mantive a lógica perfeita que já tínhamos)
       const novoPersonagem = {
         campanha_id: campanhaId,
         nome: formData.nome,
@@ -148,16 +140,17 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
         setPersonagens([...personagens, data]);
         closeFormModal();
         
-        await supabase.rpc('increment_jogadores', { camp_id: campanhaId }).catch(() => {
-           supabase.from('campanhas').update({ jogadores: personagens.length + 1 }).eq('id', campanhaId).then();
-        });
+        // ✅ CORREÇÃO: Usando a desestruturação do Supabase para tratar erros de RPC
+        const { error: rpcError } = await supabase.rpc('increment_jogadores', { camp_id: campanhaId });
+        if (rpcError) {
+          await supabase.from('campanhas').update({ jogadores: personagens.length + 1 }).eq('id', campanhaId);
+        }
       }
     }
 
     setSaving(false);
   }
 
-  // 🔥 DELETAR PERSONAGEM
   async function confirmDelete() {
     if (!charToDelete) return;
     setSaving(true);
@@ -170,14 +163,14 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
     if (error) {
       console.error('Erro ao excluir personagem:', error);
     } else {
-      // Remove da lista na tela
       setPersonagens(personagens.filter(p => p.id !== charToDelete.id));
       setCharToDelete(null);
 
-      // Decrementa o número de jogadores da campanha
-      await supabase.rpc('decrement_jogadores', { camp_id: campanhaId }).catch(() => {
-         supabase.from('campanhas').update({ jogadores: Math.max(0, personagens.length - 1) }).eq('id', campanhaId).then();
-      });
+      // ✅ CORREÇÃO: Tratamento de erro seguro no RPC
+      const { error: rpcError } = await supabase.rpc('decrement_jogadores', { camp_id: campanhaId });
+      if (rpcError) {
+         await supabase.from('campanhas').update({ jogadores: Math.max(0, personagens.length - 1) }).eq('id', campanhaId);
+      }
     }
 
     setSaving(false);
@@ -187,7 +180,7 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
     setEnteringId(personagemId);
 
     try {
-      const { data: sessao, error: sessaoError } = await supabase
+      const { data: sessao } = await supabase
         .from('sessoes')
         .select('id')
         .eq('campanha_id', campanhaId)
@@ -249,7 +242,6 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
 
   return (
     <main className={styles.container}>
-      {/* BANNER DA CAMPANHA */}
       <div className={styles.hero}>
         {campanha.banner_url && (
           <img src={campanha.banner_url} alt={campanha.nome} className={styles.heroBg} />
@@ -271,7 +263,6 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
         </div>
       </div>
 
-      {/* ÁREA DE SELEÇÃO DE PERSONAGEM */}
       <section className={styles.lobbySection}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Escolha seu Shinobi</h2>
@@ -300,7 +291,6 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
                     <span className={styles.charMeta}>Nvl {char.level} • {char.class}</span>
                   </div>
                   
-                  {/* BOTOES DE EDITAR E EXCLUIR */}
                   <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-start' }}>
                     <button 
                       onClick={(e) => { e.stopPropagation(); openEditModal(char); }} 
@@ -336,7 +326,6 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
         </div>
       </section>
 
-      {/* MODAL DE CRIAÇÃO / EDIÇÃO */}
       {isCreating && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -391,7 +380,6 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ campanha
         </div>
       )}
 
-      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
       {charToDelete && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>

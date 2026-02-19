@@ -1,53 +1,103 @@
 .fichaContainer {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background-color: #050505;
   display: flex;
   flex-direction: column;
-  width: 100%;
 }
 
-/* ── NAVEGAÇÃO DE PÁGINAS ── */
-.pageNav {
+/* --- NAVEGAÇÃO DE ABAS IDÊNTICA AO MOBS --- */
+.tabsContainer {
+  background: #0a0a0a;
+  border-bottom: 1px solid #222;
+  position: sticky;
+  top: 0; /* Cola a aba no topo do container na hora de rolar a ficha! */
+  z-index: 90;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.tabsWrapper {
   display: flex;
-  gap: 0;
-  border-bottom: 1px solid #1a1a1a;
-  background: #080808;
-  padding: 0 2rem;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.pageBtn {
+.tab {
   background: transparent;
   border: none;
-  padding: 0.9rem 2rem;
-  color: #555;
+  padding: 1.5rem 2rem;
+  color: #666;
   font-weight: 800;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
+  font-size: 0.85rem;
   cursor: pointer;
-  font-family: var(--font-montserrat);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   position: relative;
-  transition: color 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: var(--font-montserrat);
 }
-.pageBtn:hover { color: #aaa; }
 
-.pageBtnActive {
-  color: #ff6600;
+.tab:hover {
+  color: #fff;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.03), transparent);
 }
-.pageBtnActive::after {
+
+.tab.active {
+  color: #ff6600; /* Laranja da identidade Player */
+}
+
+.tab.active::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 0;
-  width: 100%; height: 2px;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
   background: #ff6600;
-  box-shadow: 0 0 8px rgba(255, 102, 0, 0.6);
+  box-shadow: 0 -2px 15px rgba(255, 102, 0, 0.8);
+  animation: expandLine 0.3s ease-out;
 }
 
-/* ── CONTEÚDO ── */
-.pageContent {
+.tab svg {
+  transition: transform 0.3s;
+}
+.tab:hover svg { transform: scale(1.1); }
+.tab.active svg { transform: scale(1.1); filter: drop-shadow(0 0 5px rgba(255, 102, 0, 0.5)); }
+
+/* --- ÁREA DE CONTEÚDO --- */
+.contentArea {
+  padding: 3rem 2rem;
+  max-width: 1400px; /* Mantém grandão igual aos Mobs */
+  margin: 0 auto;
+  width: 100%;
   flex: 1;
-  animation: fadeIn 0.25s ease-out;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Loading state */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: #ff6600;
+  font-weight: bold;
+}
+
+@keyframes expandLine {
+  from { width: 0%; left: 50%; }
+  to { width: 100%; left: 0; }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

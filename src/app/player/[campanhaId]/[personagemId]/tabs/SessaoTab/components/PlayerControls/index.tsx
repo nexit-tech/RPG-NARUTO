@@ -1,20 +1,25 @@
 'use client';
 
 import React from 'react';
-import { Swords, Shield, Move, Settings, ListOrdered, Play, Square } from 'lucide-react';
+import { Swords, Shield, Move, Settings, User, Play, Square } from 'lucide-react';
 import styles from './styles.module.css';
+
+// ✅ CORREÇÃO: Interface ajustada para bater exatamente com as propriedades que a tela SessaoTab envia.
+interface PlayerControlsProps {
+  interactionMode: string;
+  setInteractionMode: (mode: any) => void;
+  combatActive: boolean;
+  isMyTurn?: boolean; // Prop adicionada para evitar erro
+  onOpenSheet?: () => void; // Prop ajustada (antes era onOpenInitiative)
+}
 
 export default function PlayerControls({
   interactionMode,
   setInteractionMode,
   combatActive,
-  onOpenInitiative,
-}: {
-  interactionMode: string;
-  setInteractionMode: (mode: any) => void;
-  combatActive: boolean;
-  onOpenInitiative: () => void;
-}) {
+  isMyTurn,
+  onOpenSheet,
+}: PlayerControlsProps) {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -46,12 +51,12 @@ export default function PlayerControls({
         </div>
       </div>
 
-      {/* COMBATE */}
+      {/* COMBATE & FICHA */}
       <div className={styles.group}>
-        <label>COMBATE</label>
+        <label>UTILITÁRIOS</label>
         <div className={styles.verticalActions}>
-          <button onClick={onOpenInitiative} className={styles.btn}>
-            <ListOrdered size={16} /> ORDEM DE TURNO
+          <button onClick={onOpenSheet} className={styles.btn}>
+            <User size={16} /> ABRIR FICHA RÁPIDA
           </button>
           <button
             className={`${styles.btn} ${combatActive ? styles.combatOn : styles.combatOff}`}

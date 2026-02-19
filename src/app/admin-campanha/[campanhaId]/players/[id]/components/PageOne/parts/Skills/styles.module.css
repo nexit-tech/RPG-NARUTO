@@ -1,36 +1,175 @@
-.card { background: #0a0a0a; border: 1px solid #222; border-radius: 8px; display: flex; flex-direction: column; height: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden; }
-.header { background: #000; padding: 10px; text-align: center; border-bottom: 2px solid #ffcc00; }
-.header span { font-family: 'NinjaNaruto', sans-serif; color: #ffcc00; font-size: 1.1rem; letter-spacing: 1px; }
+.card {
+  background: #080808;
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
 
-.headerRow { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; background: #151515; border-bottom: 1px solid #333; padding: 0 1rem; }
-.subHeader { display: flex; padding: 8px 0; font-size: 0.55rem; font-weight: 800; color: #888; text-transform: uppercase; }
-.colName { width: 40%; }
-.colData { width: 60%; display: flex; justify-content: space-between; text-align: center; padding-left: 5px; }
+.header {
+  background: #000;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-bottom: 2px solid #ff6600;
+}
 
-.gridList { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1.5rem; row-gap: 0; overflow-y: auto; padding: 0 1rem 1rem 1rem; align-content: start; }
+.header span {
+  font-family: var(--font-montserrat);
+  color: #ff6600;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.headerRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  background: #111;
+  border-bottom: 1px solid #222;
+  padding: 0 1rem;
+}
+
+.subHeader {
+  display: flex;
+  padding: 10px 0;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.colName {
+  width: 40%;
+  padding-left: 5px;
+}
+
+/* Coluna flexível para alinhar certinho com as caixas de número */
+.colData {
+  width: 60%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.colData span {
+  width: 35px; /* Mesmo width fixo dos inputs pra forçar o alinhamento */
+  text-align: center;
+}
+
+.gridList {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.5rem;
+  row-gap: 0;
+  overflow-y: auto;
+  padding: 0 1rem 1rem 1rem;
+  align-content: start;
+}
+
 .gridList::-webkit-scrollbar { width: 4px; }
-.gridList::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+.gridList::-webkit-scrollbar-thumb { background: #ff6600; border-radius: 4px; }
 
-.row { display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid #1a1a1a; transition: background 0.2s; }
-.row:nth-child(4n-3), .row:nth-child(4n-2) { background: #0a0a0a; }
-.row:nth-child(4n-1), .row:nth-child(4n) { background: #111; }
-.row:hover { background: rgba(255, 204, 0, 0.05); }
+.row {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #1a1a1a;
+  transition: background 0.2s;
+}
 
-.nameCell { width: 40%; font-family: 'NinjaNaruto', sans-serif; font-size: 0.8rem; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 5px; }
-.calcCell { width: 60%; display: flex; align-items: center; justify-content: space-between; }
+.row:hover {
+  background: rgba(255, 102, 0, 0.05);
+}
 
-.totalBox { width: 35px; background: #222; color: #ffcc00; font-weight: 800; text-align: center; border-radius: 3px; padding: 2px 0; font-size: 0.85rem; border: 1px solid #333; }
-.attrBox { width: 30px; text-align: center; color: #555; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; }
-.mathSym { color: #444; font-weight: 700; font-size: 0.7rem; margin: 0 2px; }
-.lineInput { flex: 1; height: 1px; background: #444; margin: 0 3px; position: relative; top: 3px; }
+.nameCell {
+  width: 40%;
+  font-family: var(--font-montserrat);
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #ddd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 5px;
+}
 
-/* INPUTS */
-.inputTotal { width: 35px; background: #1a1a1a; border: 1px solid #444; color: #ffcc00; font-weight: 800; text-align: center; border-radius: 3px; padding: 1px; font-size: 0.85rem; }
-.inputAttr { width: 30px; background: #1a1a1a; border: 1px solid #444; color: #fff; text-align: center; border-radius: 3px; padding: 1px; font-size: 0.6rem; text-transform: uppercase; }
-input:focus { border-color: #ffcc00; outline: none; }
+/* Centraliza os campos de cálculo usando as mesmas proporções */
+.calcCell {
+  width: 60%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+.totalBox {
+  width: 35px;
+  background: #222;
+  color: #ff6600;
+  font-weight: 900;
+  text-align: center;
+  border-radius: 4px;
+  padding: 4px 0;
+  font-size: 0.85rem;
+  border: 1px solid #333;
+}
+
+.attrBox {
+  width: 35px;
+  text-align: center;
+  color: #777;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #111;
+  padding: 4px 0;
+  border-radius: 4px;
+}
+
+.mathSym {
+  color: #555;
+  font-weight: 900;
+  font-size: 0.7rem;
+}
+
+.inputAttr {
+  width: 35px;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+  padding: 4px 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: border 0.2s;
+}
+
+.inputAttr:focus {
+  border-color: #ff6600;
+  outline: none;
+}
+
+.staticValue {
+  width: 35px;
+  text-align: center;
+  color: #aaa;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-bottom: 1px solid #333;
+  padding-bottom: 2px;
+}
 
 @media (max-width: 900px) {
   .headerRow, .gridList { grid-template-columns: 1fr; gap: 0; }
   .desktopOnly { display: none; }
-  .row { padding: 8px 0; }
+  .row { padding: 10px 0; }
 }

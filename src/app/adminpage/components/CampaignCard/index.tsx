@@ -2,13 +2,13 @@ import React from 'react';
 import { Edit2, Trash2, Users, Map } from 'lucide-react';
 import styles from './styles.module.css';
 
-// Interface para tipar nossos dados (Clean Code)
+// Corrigido: id agora é 'string' para bater perfeitamente com o page.tsx e o banco de dados
 export interface Campaign {
-  id: number;
+  id: string; 
   name: string;
   level: string;
   players: number;
-  imageUrl?: string; // Novo campo opcional
+  imageUrl?: string;
 }
 
 interface CampaignCardProps {
@@ -51,14 +51,20 @@ export default function CampaignCard({ data, onEdit, onDelete, onClick }: Campai
            <button 
              className={styles.iconBtn} 
              title="Editar" 
-             onClick={(e) => onEdit(e, data)}
+             onClick={(e) => {
+               e.stopPropagation(); // Evita que clique no botão também abra a campanha
+               onEdit(e, data);
+             }}
            >
              <Edit2 size={16} />
            </button>
            <button 
              className={`${styles.iconBtn} ${styles.deleteBtn}`} 
              title="Excluir" 
-             onClick={(e) => onDelete(e, data)}
+             onClick={(e) => {
+               e.stopPropagation(); // Evita que clique no botão também abra a campanha
+               onDelete(e, data);
+             }}
            >
              <Trash2 size={16} />
            </button>
