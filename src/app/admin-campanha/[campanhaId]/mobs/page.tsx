@@ -1,40 +1,85 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Skull, Swords, Plus } from 'lucide-react';
+import { ArrowLeft, Search, Skull, Swords, Plus, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import styles from './styles.module.css';
 import CreateMobModal from './components/CreateMobModal';
 
-// Mock Inicial
-const MOBS = [
-  { id: 1, name: 'Zetsu Branco', type: 'Minion', rank: 'D', hp: 40, img: 'https://imgs.search.brave.com/hAIyZtVgluqvO_176cybig8JoSIDDzB1ZBt-gyR6spQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jcml0/aWNhbGhpdHMuY29t/LmJyL3dwLWNvbnRl/bnQvdXBsb2Fkcy8y/MDIwLzEyL1NoaXJv/X1pldHN1LTkxMHg1/MTguanBn' },
-  { id: 2, name: 'Manda (Rei Cobra)', type: 'Boss', rank: 'S', hp: 2000, img: 'https://i.pinimg.com/736x/c5/44/2c/c5442c5543c74577823521d8ff275990.jpg' },
-];
-
-export default function MobsPage() {
+export default function MobsPage({ params }: { params: Promise<{ campanhaId: string }> }) {
   const router = useRouter();
+  
+  const resolvedParams = use(params);
+  const campanhaId = resolvedParams.campanhaId;
+
+  const [mobs, setMobs] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [search, setSearch] = useState('');
 
-  const filtered = MOBS.filter(m =>
-    m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.type.toLowerCase().includes(search.toLowerCase()) ||
-    m.rank.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    if (campanhaId) {
+      fetchMobs();
+    }
+  }, [campanhaId]);
 
-  const handleCreate = (name: string) => {
-    const newId = Math.floor(Math.random() * 10000);
-    console.log(`Criando Mob: ${name} com ID ${newId}`);
-    router.push(`/admin-campanha/mobs/${newId}?name=${encodeURIComponent(name)}`);
+  async function fetchMobs() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('mobs')
+      .select('*')
+      .eq('campanha_id', campanhaId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar Mobs:', error);
+    } else if (data) {
+      setMobs(data);
+    }
+    setLoading(false);
+  }
+
+  const handleCreate = async (name: string): Promise<void> => {
+    const { data, error } = await supabase
+      .from('mobs')
+      .insert({
+        campanha_id: campanhaId,
+        nome: name,
+        img: 'https://via.placeholder.com/150?text=Sem+Foto',
+        tipo: 'comum',
+        hp_base: 50, cp_base: 30,
+        atk: 8, def: 6, esq: 8, cd: 6,
+        habilidades: {}
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Erro ao criar Mob:', error);
+      throw error;
+    }
+
+    if (data?.id) {
+      setIsModalOpen(false);
+      await new Promise(resolve => setTimeout(resolve, 50));
+      router.push(`/admin-campanha/${campanhaId}/mobs/${data.id}`);
+    } else {
+      throw new Error('ID não retornado pelo banco.');
+    }
   };
+
+  const filteredMobs = mobs.filter(mob =>
+    mob.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (mob.tipo && mob.tipo.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <main className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerTop}>
-          <Link href="/admin-campanha" className={styles.backLink}>
+          <Link href={`/admin-campanha/${campanhaId}`} className={styles.backLink}>
             <ArrowLeft size={20} /> Painel
           </Link>
           <button className={styles.createBtn} onClick={() => setIsModalOpen(true)}>
@@ -51,41 +96,53 @@ export default function MobsPage() {
           <Search className={styles.searchIcon} />
           <input
             type="text"
-            placeholder="Buscar por nome, tipo ou rank..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por nome ou tipo..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
       </header>
 
-      <div className={styles.grid}>
-        {filtered.map((mob) => (
-          <Link href={`/admin-campanha/mobs/${mob.id}`} key={mob.id} className={styles.card}>
-            <div className={styles.imageContainer}>
-              <img src={mob.img} alt={mob.name} className={styles.image} />
-              <div className={`${styles.rankBadge} ${styles['rank' + mob.rank]}`}>
-                Rank {mob.rank}
-              </div>
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}>
+          <Loader2 size={40} className={styles.spinner} />
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {filteredMobs.length === 0 ? (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: '#666' }}>
+              Nenhum monstro encontrado.
             </div>
+          ) : (
+            filteredMobs.map((mob) => (
+              <Link href={`/admin-campanha/${campanhaId}/mobs/${mob.id}`} key={mob.id} className={styles.card}>
+                <div className={styles.imageContainer}>
+                  <img src={mob.img || 'https://via.placeholder.com/150'} alt={mob.nome} className={styles.image} />
+                  <div className={`${styles.rankBadge} ${styles['rank' + (mob.habilidades?.info?.shinobiLevel || 'D')]}`}>
+                    Nível {mob.nivel || 1}
+                  </div>
+                </div>
 
-            <div className={styles.cardContent}>
-              <h3 className={styles.name}>{mob.name}</h3>
-              <div className={styles.infoRow}>
-                <Swords size={14} className={styles.icon} />
-                <span>{mob.type}</span>
-              </div>
-              <div className={styles.infoRow}>
-                <Skull size={14} className={styles.icon} />
-                <span>{mob.hp} PV</span>
-              </div>
-            </div>
+                <div className={styles.cardContent}>
+                  <h3 className={styles.name}>{mob.nome}</h3>
+                  <div className={styles.infoRow}>
+                    <Swords size={14} className={styles.icon} />
+                    <span style={{ textTransform: 'capitalize' }}>{mob.tipo || 'comum'}</span>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <Skull size={14} className={styles.icon} />
+                    <span>{mob.hp_base || 50} PV</span>
+                  </div>
+                </div>
 
-            <div className={styles.cardFooter}>
-              Ver Ficha
-            </div>
-          </Link>
-        ))}
-      </div>
+                <div className={styles.cardFooter}>
+                  Editar Ficha
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+      )}
 
       <CreateMobModal
         isOpen={isModalOpen}

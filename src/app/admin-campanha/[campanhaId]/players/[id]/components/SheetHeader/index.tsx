@@ -14,13 +14,19 @@ export default function SheetHeader({ data, onChange }: { data: any, onChange?: 
   }, [data]);
 
   const handleChange = (field: string, val: string) => {
+    // Atualiza apenas o estado local enquanto digita
     const updatedInfo = { ...localInfo, [field]: val };
     setLocalInfo(updatedInfo);
-    
-    // Se o componente pai tiver um onChange, avisa ele também
-    if (onChange) {
-      onChange({ ...data, info: updatedInfo });
+  };
+
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      // Quando clica em salvar, envia tudo para o page.tsx de uma vez
+      if (onChange) {
+        onChange({ ...data, info: localInfo });
+      }
     }
+    setIsEditing(!isEditing);
   };
 
   return (
@@ -29,7 +35,7 @@ export default function SheetHeader({ data, onChange }: { data: any, onChange?: 
       {/* BOTÃO DE EDITAR */}
       <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 10 }}>
         <button 
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={handleToggleEdit}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             background: isEditing ? '#22c55e' : '#333',

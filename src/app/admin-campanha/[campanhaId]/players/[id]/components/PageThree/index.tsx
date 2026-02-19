@@ -18,7 +18,7 @@ const MOCK_JUTSUS = [
   }
 ];
 
-export default function PageThree({ data }: { data: any }) {
+export default function PageThree({ data, setData }: { data: any, setData?: any }) {
   // Inicializa com os Jutsus da ficha, ou usa o MOCK como fallback visual
   const [localJutsus, setLocalJutsus] = useState<any[]>(data?.jutsus?.length > 0 ? data.jutsus : MOCK_JUTSUS);
   const [isEditing, setIsEditing] = useState(false);
@@ -46,13 +46,20 @@ export default function PageThree({ data }: { data: any }) {
     }]);
   };
 
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      if (setData) setData({ ...data, jutsus: localJutsus });
+    }
+    setIsEditing(!isEditing);
+  };
+
   return (
     <div className={styles.container}>
       
       {/* BARRA DE CONTROLE DE EDIÇÃO */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
         <button 
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={handleToggleEdit}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             background: isEditing ? '#22c55e' : '#333',

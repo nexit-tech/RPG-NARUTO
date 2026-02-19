@@ -51,7 +51,7 @@ export default function CurrentTurnPanel({ character }: { character: Token }) {
 
       {/* 3. Atributos de Combate Rápido */}
       <div className={styles.statsGrid}>
-        <StatBox icon={<Sword size={14}/>} label="ATK" value={character.stats?.atk || 0} />
+        <StatBox icon={<Sword size={14}/>} label="CC" value={character.stats?.atk || 0} />
         <StatBox icon={<Shield size={14}/>} label="DEF" value={character.stats?.def || 0} />
         <StatBox icon={<Wind size={14}/>} label="ESQ" value={character.stats?.esq || 0} />
         <StatBox icon={<Crosshair size={14}/>} label="CD" value={character.stats?.cd || 0} />

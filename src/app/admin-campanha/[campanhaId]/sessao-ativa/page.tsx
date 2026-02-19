@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -18,9 +18,10 @@ import AoEActionModal from './components/AoEActionModal';
 import QuickSheetModal from './components/QuickSheetModal';
 import InitiativeModal from './components/InitiativeModal';
 
-// O Next.js 15 exige que desempacotemos os params com `use`
 export default function ActiveSessionPage({ params }: { params: Promise<{ campanhaId: string }> }) {
-  const { campanhaId } = use(params);
+  // Desempacotamento seguro dos params (Exigência do Next 15)
+  const resolvedParams = use(params);
+  const campanhaId = resolvedParams?.campanhaId;
 
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -33,10 +34,13 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
   const [logs, setLogs] = useState<string[]>(["Sessão iniciada e conectada ao servidor."]);
   
   // Modos e Configurações
-  const [interactionMode, setInteractionMode] = useState<'move' | 'attack' | 'heal' | 'down' | 'aoe_cone' | 'aoe_circle' | 'aoe_line'>('move');
+  const [interactionMode, setInteractionMode] = useState<'move' | 'attack' | 'heal' | 'down' | 'aoe_cone' | 'aoe_circle' | 'aoe_line' | 'spawn'>('move');
   const [snapToGrid, setSnapToGrid] = useState(true);
-  const [gridScale, setGridScale] = useState(1.5); 
+  const [gridScale, setGridScale] = useState(1.0); 
   const [combatActive, setCombatActive] = useState(false);
+
+  // Estado para posicionar Mob/NPC no mapa
+  const [pendingSpawn, setPendingSpawn] = useState<{ dbTemplate: any, type: 'mob' | 'npc' } | null>(null);
 
   // Modais
   const [actionModal, setActionModal] = useState<any>({ isOpen: false, type: null, targetId: null });
@@ -45,55 +49,111 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
   const [sheetModalOpen, setSheetModalOpen] = useState(false);
   const [initModalOpen, setInitModalOpen] = useState(false);
 
-  // --- BUSCA INICIAL DE DADOS (SUPABASE) ---
+  // Canal de Realtime
+  const channelRef = useRef<any>(null);
+
+  // --- BUSCA INICIAL DE DADOS E REALTIME ---
   useEffect(() => {
     if (campanhaId) fetchSessionData();
   }, [campanhaId]);
 
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const channel = supabase.channel(`mesa-${sessionId}`, {
+      config: { broadcast: { self: false } }
+    });
+
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessao_tokens', filter: `sessao_id=eq.${sessionId}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const t = payload.new;
+          setTokens(prev => {
+            if (prev.some(existing => existing.id === t.id)) return prev;
+            const newToken: Token = {
+              id: t.id, originalId: t.personagem_id || t.npc_id || t.mob_id,
+              originalTable: t.personagem_id ? 'players' : (t.npc_id ? 'npcs' : 'mobs'),
+              name: t.nome, type: t.token_type === 'enemy' || t.token_type === 'mob' ? 'enemy' : 'player',
+              img: t.img, x: t.map_x, y: t.map_y,
+              hp: t.hp, maxHp: t.max_hp, cp: t.cp, maxCp: t.max_cp,
+              level: t.level, class: t.class, stats: { atk: t.atk, def: t.def, esq: t.esq, cd: t.cd },
+              initiative: t.initiative || 0, inCombat: t.in_combat, isDown: t.is_down
+            };
+            return [...prev, newToken].sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
+          });
+        } 
+        else if (payload.eventType === 'UPDATE') {
+          const t = payload.new;
+          setTokens(prev => {
+              const updated = prev.map(existing => existing.id === t.id ? {
+                  ...existing, x: t.map_x, y: t.map_y, hp: t.hp, cp: t.cp,
+                  inCombat: t.in_combat, isDown: t.is_down, initiative: t.initiative
+              } : existing);
+              return updated.sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
+          });
+        } 
+        else if (payload.eventType === 'DELETE') {
+          setTokens(prev => prev.filter(existing => existing.id !== payload.old.id));
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessoes', filter: `id=eq.${sessionId}` }, (payload) => {
+        const s = payload.new;
+        setMapUrl(s.map_url);
+        setShowGrid(s.show_grid);
+        setGridScale(s.grid_scale || 1.0);
+        setSnapToGrid(s.snap_to_grid);
+        setCombatActive(s.combat_active);
+        setCurrentTurnIndex(s.current_turn_index || 0);
+      })
+      .on('broadcast', { event: 'token_drag' }, ({ payload }) => {
+        setTokens(prev => prev.map(t => t.id === payload.id ? { ...t, x: payload.x, y: payload.y } : t));
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId]);
+
   async function fetchSessionData() {
     setLoading(true);
     
-    // 1. Busca a Sessão da Campanha
-    const { data: sessao } = await supabase
-      .from('sessoes')
-      .select('*')
-      .eq('campanha_id', campanhaId)
-      .single();
+    const { data: sessao, error } = await supabase.from('sessoes').select('*').eq('campanha_id', campanhaId).single();
 
-    if (sessao) {
+    if (sessao && !error) {
       setSessionId(sessao.id);
       setMapUrl(sessao.map_url || 'https://i.pinimg.com/originals/99/3a/05/993a059c03db26993952dc67b931920d.jpg');
       setShowGrid(sessao.show_grid);
-      setGridScale(sessao.grid_scale);
+      setGridScale(sessao.grid_scale || 1.0);
       setSnapToGrid(sessao.snap_to_grid);
       setCombatActive(sessao.combat_active);
       setCurrentTurnIndex(sessao.current_turn_index || 0);
 
-      // 2. Busca todos os Tokens (Players, NPCs, Mobs) que estão na mesa!
-      const { data: tokensDb } = await supabase
-        .from('sessao_tokens')
-        .select('*')
-        .eq('sessao_id', sessao.id);
+      const { data: tokensDb } = await supabase.from('sessao_tokens').select('*').eq('sessao_id', sessao.id);
 
       if (tokensDb) {
-        // Mapeia do banco para o formato visual que o React espera
-        const mappedTokens: Token[] = tokensDb.map(t => ({
-          id: t.id,
-          name: t.nome,
-          type: t.token_type === 'enemy' || t.token_type === 'mob' ? 'enemy' : 'player', // Mobs ficam vermelhos, Players/NPCs verdes
-          img: t.img,
-          x: t.map_x,
-          y: t.map_y,
-          hp: t.hp, maxHp: t.max_hp,
-          cp: t.cp, maxCp: t.max_cp,
-          level: t.level, class: t.class,
-          stats: { atk: t.atk, def: t.def, esq: t.esq, cd: t.cd },
-          initiative: t.initiative || 0,
-          inCombat: t.in_combat,
-          isDown: t.is_down
-        }));
+        const mappedTokens: Token[] = tokensDb.map(t => {
+          let origId = t.personagem_id || t.npc_id || t.mob_id || null;
+          let origTable = t.personagem_id ? 'players' : (t.npc_id ? 'npcs' : 'mobs');
 
-        // Ordena pela iniciativa
+          return {
+            id: t.id,
+            originalId: origId,
+            originalTable: origTable as any,
+            name: t.nome || 'Desconhecido',
+            type: t.token_type === 'enemy' || t.token_type === 'mob' ? 'enemy' : 'player',
+            img: t.img || 'https://via.placeholder.com/150',
+            x: t.map_x || 0,
+            y: t.map_y || 0,
+            hp: t.hp || 0, maxHp: t.max_hp || 1, cp: t.cp || 0, maxCp: t.max_cp || 1,
+            level: t.level || 1, class: t.class || 'N/A', 
+            stats: { atk: t.atk || 0, def: t.def || 0, esq: t.esq || 0, cd: t.cd || 0 },
+            initiative: t.initiative || 0, inCombat: !!t.in_combat, isDown: !!t.is_down
+          };
+        });
+
         mappedTokens.sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
         setTokens(mappedTokens);
       }
@@ -103,26 +163,28 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
 
   const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
 
-  // --- LÓGICA DE EXIBIÇÃO ---
+  // Segurança extra: Garante que os arrays não fiquem undefined
+  const safeTokens = tokens || [];
   const displayedTokens = combatActive 
-    ? tokens.filter(t => t.inCombat !== false) 
-    : tokens;
+    ? safeTokens.filter(t => t.inCombat !== false) 
+    : safeTokens;
 
-  const safeTurnIndex = currentTurnIndex >= displayedTokens.length ? 0 : currentTurnIndex;
-  const currentCharacter = displayedTokens[safeTurnIndex];
+  // Previne leitura de index vazio se a lista de tokens estiver vazia
+  const safeTurnIndex = (displayedTokens.length > 0 && currentTurnIndex < displayedTokens.length) 
+    ? currentTurnIndex 
+    : 0;
+  
+  const currentCharacter = displayedTokens.length > 0 ? displayedTokens[safeTurnIndex] : null;
 
-  // --- CONTROLE DE TURNO E SALVAMENTO AUTOMÁTICO ---
+  // --- AÇÕES DO TURNO ---
   const syncTurnIndex = async (newIndex: number) => {
     setCurrentTurnIndex(newIndex);
-    if (sessionId) {
-      await supabase.from('sessoes').update({ current_turn_index: newIndex }).eq('id', sessionId);
-    }
+    if (sessionId) await supabase.from('sessoes').update({ current_turn_index: newIndex }).eq('id', sessionId);
   };
 
   const nextTurn = () => {
     if (displayedTokens.length === 0) return;
     let nextIndex = (safeTurnIndex + 1) % displayedTokens.length;
-    
     if (combatActive) {
       let loopCount = 0;
       while (displayedTokens[nextIndex]?.isDown && loopCount < displayedTokens.length) {
@@ -135,6 +197,7 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
   };
 
   const prevTurn = () => {
+    if (displayedTokens.length === 0) return;
     let prevIndex = (safeTurnIndex - 1 + displayedTokens.length) % displayedTokens.length;
     syncTurnIndex(prevIndex);
   };
@@ -143,32 +206,32 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
     const newState = !combatActive;
     setCombatActive(newState);
     setCurrentTurnIndex(0);
-    
-    if (sessionId) {
-      await supabase.from('sessoes').update({ combat_active: newState, current_turn_index: 0 }).eq('id', sessionId);
-    }
-    
+    if (sessionId) await supabase.from('sessoes').update({ combat_active: newState, current_turn_index: 0 }).eq('id', sessionId);
     if (newState) addLog("⚔️ Mestre iniciou o Combate!");
     else addLog("🕊️ Combate finalizado. Modo Exploração.");
   };
 
-  // --- INTEGRAÇÃO COM O MAPA ---
-  const handleMoveToken = async (id: string, x: number, y: number) => {
-    // Atualiza na tela imediantamente (Otimista)
+  // --- AÇÕES DO MAPA ---
+  const handleTokenDrag = (id: string, x: number, y: number) => {
     setTokens(prev => prev.map(t => t.id === id ? { ...t, x, y } : t));
-    // Salva no banco silenciosamente
+    if (channelRef.current) {
+      channelRef.current.send({ type: 'broadcast', event: 'token_drag', payload: { id, x, y } });
+    }
+  };
+
+  const handleMoveToken = async (id: string, x: number, y: number) => {
+    setTokens(prev => prev.map(t => t.id === id ? { ...t, x, y } : t));
     await supabase.from('sessao_tokens').update({ map_x: x, map_y: y }).eq('id', id);
   };
 
   const handleTokenAction = async (action: 'attack' | 'heal' | 'down', targetId: string) => {
-    const target = tokens.find(t => t.id === targetId);
+    const target = safeTokens.find(t => t.id === targetId);
     if (!target) return;
 
     if (action === 'down') {
       const newStatus = !target.isDown;
       setTokens(prev => prev.map(t => t.id === targetId ? { ...t, isDown: newStatus } : t));
       await supabase.from('sessao_tokens').update({ is_down: newStatus }).eq('id', targetId);
-      
       addLog(newStatus ? `💀 ${target.name} foi DERRUBADO!` : `♻️ ${target.name} levantou-se.`);
       setInteractionMode('move');
     } else {
@@ -178,7 +241,7 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
 
   const handleModalConfirm = async (value: number, isHit: boolean) => {
     const { type, targetId } = actionModal;
-    const target = tokens.find(t => t.id === targetId);
+    const target = safeTokens.find(t => t.id === targetId);
     
     if (target && type) {
       let newHp = target.hp;
@@ -200,117 +263,45 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
     setInteractionMode('move');
   };
 
-  const handleAoEComplete = (targets: Token[], shape: string) => {
-    if (targets.length === 0) {
-      addLog(`💨 AoE falhou (0 alvos).`);
-      return;
-    }
-    setAoeModal({ isOpen: true, targets, shape });
-    setInteractionMode('move');
+  // --- SPAWN (INVOCAÇÃO) COM CLIQUE ---
+  const handleSelectEntityToSpawn = (dbTemplate: any, type: 'mob' | 'npc') => {
+    setPendingSpawn({ dbTemplate, type });
+    setInteractionMode('spawn');
+    setMobModalOpen(false);
+    addLog(`📍 Clique no mapa para invocar: ${dbTemplate.nome}`);
   };
 
-  const handleAoEConfirm = async (damages: Record<string, number>) => {
-    const hitNames: string[] = [];
-    const newTokensState = [...tokens];
-
-    for (const [id, dmg] of Object.entries(damages)) {
-      if (dmg !== undefined && dmg > 0) {
-        const idx = newTokensState.findIndex(t => t.id === id);
-        if (idx !== -1) {
-          hitNames.push(`${newTokensState[idx].name} (-${dmg})`);
-          const newHp = Math.max(0, newTokensState[idx].hp - dmg);
-          newTokensState[idx] = { ...newTokensState[idx], hp: newHp };
-          // Atualiza o banco
-          await supabase.from('sessao_tokens').update({ hp: newHp }).eq('id', id);
-        }
-      }
-    }
-
-    setTokens(newTokensState);
-    if (hitNames.length > 0) addLog(`💥 AoE finalizado: ${hitNames.join(', ')}.`);
-    setAoeModal({ ...aoeModal, isOpen: false });
-  };
-
-  const handleDeleteToken = async (id: string) => {
-    const target = tokens.find(t => t.id === id);
-    if (window.confirm(`Remover ${target?.name} permanentemente da mesa?`)) {
-      setTokens(prev => prev.filter(t => t.id !== id));
-      await supabase.from('sessao_tokens').delete().eq('id', id);
-      addLog(`❌ ${target?.name} removido do mapa.`);
-    }
-  };
-
-  const handleInitiativeConfirm = async (updates: { id: string, initiative: number, inCombat: boolean }[]) => {
-    const newTokens = [...tokens];
+  const executeSpawn = async (x: number, y: number) => {
+    if (!sessionId || !pendingSpawn) return;
+    const { dbTemplate, type } = pendingSpawn;
     
-    // Processamos os updates para a tela e disparamos para o banco
-    for (const u of updates) {
-      const idx = newTokens.findIndex(t => t.id === u.id);
-      if (idx !== -1) {
-        newTokens[idx] = { ...newTokens[idx], initiative: u.initiative, inCombat: u.inCombat };
-        await supabase.from('sessao_tokens').update({ initiative: u.initiative, in_combat: u.inCombat }).eq('id', u.id);
-      }
-    }
-    
-    newTokens.sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
-    setTokens(newTokens);
-    
-    setInitModalOpen(false);
-    setCombatActive(true); 
-    syncTurnIndex(0);
-    addLog("⚔️ Iniciativa definida! Combate iniciado.");
-  };
-
-  // INSERE O MOB DIRETAMENTE NO BANCO DE DADOS DA MESA!
-  const handleAddMob = async (mobTemplate: any) => {
-    if (!sessionId) return;
+    const hpMax = dbTemplate.max_hp || dbTemplate.hp_base || 100;
+    const cpMax = dbTemplate.max_cp || dbTemplate.cp_base || 100;
 
     const dbToken = {
       sessao_id: sessionId,
-      token_type: 'mob',
-      nome: mobTemplate.nome || mobTemplate.name,
-      img: mobTemplate.img || 'https://via.placeholder.com/150',
-      hp: mobTemplate.hp_base || mobTemplate.hp || 50,
-      max_hp: mobTemplate.hp_base || mobTemplate.maxHp || 50,
-      cp: mobTemplate.cp_base || 0,
-      max_cp: mobTemplate.cp_base || 0,
-      atk: mobTemplate.atk || 10,
-      def: mobTemplate.def || 10,
-      esq: mobTemplate.esq || 10,
-      cd: mobTemplate.cd || 10,
-      level: mobTemplate.nivel || 1,
-      class: 'Monstro',
-      map_x: 2, // Nasce pertinho do canto superior
-      map_y: 2,
-      in_combat: true,
-      is_down: false,
-      initiative: 0
+      token_type: type,
+      npc_id: type === 'npc' ? dbTemplate.id : null,
+      mob_id: type === 'mob' ? dbTemplate.id : null,
+      nome: dbTemplate.nome || 'Desconhecido',
+      img: dbTemplate.img || 'https://via.placeholder.com/150',
+      hp: hpMax, max_hp: hpMax,
+      cp: cpMax, max_cp: cpMax,
+      atk: dbTemplate.atk || 10, def: dbTemplate.def || 10,
+      esq: dbTemplate.esq || 10, cd: dbTemplate.cd || 10,
+      level: dbTemplate.nivel || 1,
+      class: type === 'mob' ? (dbTemplate.tipo || 'Monstro') : 'Ninja',
+      map_x: x, map_y: y, 
+      in_combat: true, is_down: false, initiative: 0
     };
 
     const { data, error } = await supabase.from('sessao_tokens').insert(dbToken).select().single();
-    
     if (!error && data) {
-      const novoToken: Token = {
-        id: data.id, name: data.nome, type: 'enemy', img: data.img,
-        hp: data.hp, maxHp: data.max_hp, cp: data.cp, maxCp: data.max_cp,
-        x: data.map_x, y: data.map_y, level: data.level, class: data.class,
-        stats: { atk: data.atk, def: data.def, esq: data.esq, cd: data.cd },
-        inCombat: data.in_combat, isDown: data.is_down, initiative: data.initiative
-      };
-      
-      setTokens(prev => [...prev, novoToken]);
       addLog(`⚠️ ${data.nome} invocado no mapa!`);
     }
-    setMobModalOpen(false);
-  };
-
-  const handleUrlChange = async () => {
-    const url = window.prompt("Insira a URL da imagem do novo cenário:");
-    if (url && sessionId) {
-      setMapUrl(url);
-      await supabase.from('sessoes').update({ map_url: url }).eq('id', sessionId);
-      addLog("🗺️ O Mestre alterou o cenário.");
-    }
+    
+    setInteractionMode('move');
+    setPendingSpawn(null);
   };
 
   if (loading) {
@@ -334,7 +325,6 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
         <div style={{width: 100}}></div>
       </header>
 
-      {/* TRACKER DE INICIATIVA NO TOPO LENDO A LISTA 'displayedTokens' */}
       <section className={styles.areaInitiative}>
         <InitiativeTracker 
           order={displayedTokens} 
@@ -352,7 +342,15 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
             snapToGrid={snapToGrid} setSnapToGrid={setSnapToGrid}
             gridScale={gridScale} setGridScale={setGridScale}
             onToggleGrid={() => setShowGrid(!showGrid)} gridEnabled={showGrid}
-            onChangeMap={handleUrlChange} onAddLog={addLog}
+            onChangeMap={() => {
+              const url = window.prompt("Insira a URL da imagem do novo cenário:");
+              if (url && sessionId) {
+                setMapUrl(url);
+                supabase.from('sessoes').update({ map_url: url }).eq('id', sessionId);
+                addLog("🗺️ O Mestre alterou o cenário.");
+              }
+            }} 
+            onAddLog={addLog}
             onOpenMobModal={() => setMobModalOpen(true)}
             combatActive={combatActive} 
             onToggleCombat={toggleCombatMode} 
@@ -361,23 +359,35 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
         </aside>
 
         <div className={styles.centerCol}>
-          <section className={`${styles.areaMap} ${styles[interactionMode]}`}>
+          <section className={`${styles.areaMap} ${styles[interactionMode] || ''}`}>
             <BattleMap 
               imageUrl={mapUrl} showGrid={showGrid} 
               gridScale={gridScale} snapToGrid={snapToGrid}
               interactionMode={interactionMode as any}
               tokens={displayedTokens} 
               onMoveToken={handleMoveToken}
+              onTokenDrag={handleTokenDrag} 
               onTokenAction={handleTokenAction}
-              onAoEComplete={handleAoEComplete}
-              onDeleteToken={handleDeleteToken}
+              onAoEComplete={(targets, shape) => {
+                if (targets.length === 0) return addLog(`💨 AoE falhou (0 alvos).`);
+                setAoeModal({ isOpen: true, targets, shape });
+                setInteractionMode('move');
+              }}
+              onDeleteToken={async (id) => {
+                const target = safeTokens.find(t => t.id === id);
+                if (window.confirm(`Remover ${target?.name || 'token'} permanentemente da mesa?`)) {
+                  setTokens(prev => prev.filter(t => t.id !== id));
+                  await supabase.from('sessao_tokens').delete().eq('id', id);
+                  addLog(`❌ ${target?.name || 'Token'} removido do mapa.`);
+                }
+              }}
+              onMapClick={executeSpawn}
             />
             
-            {/* Modais */}
             <ActionModal 
               isOpen={actionModal.isOpen} type={actionModal.type}
-              attackerName={currentCharacter?.name}
-              targetName={tokens.find(t => t.id === actionModal.targetId)?.name || 'Alvo'}
+              attackerName={currentCharacter?.name || 'Desconhecido'}
+              targetName={safeTokens.find(t => t.id === actionModal.targetId)?.name || 'Alvo'}
               onClose={() => setActionModal({...actionModal, isOpen: false})}
               onConfirm={handleModalConfirm}
             />
@@ -386,17 +396,16 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
               onClose={() => setAoeModal({...aoeModal, isOpen: false})}
               onConfirm={handleAoEConfirm}
             />
+            
             <MobSelectorModal 
-              isOpen={mobModalOpen} onClose={() => setMobModalOpen(false)} onSelect={handleAddMob} 
-            />
-            <InitiativeModal 
-              isOpen={initModalOpen} tokens={tokens} 
-              onClose={() => setInitModalOpen(false)} onConfirm={handleInitiativeConfirm}
+              campanhaId={campanhaId}
+              isOpen={mobModalOpen} 
+              onClose={() => setMobModalOpen(false)} 
+              onSelect={handleSelectEntityToSpawn} 
             />
           </section>
           
-          {/* PAINEL INFERIOR DO TURNO */}
-          <CurrentTurnPanel character={currentCharacter} />
+          {currentCharacter && <CurrentTurnPanel character={currentCharacter as Token} />}
         </div>
 
         <aside className={styles.areaLog}>
@@ -405,8 +414,10 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ campan
       </div>
       
       <QuickSheetModal 
-        isOpen={sheetModalOpen} onClose={() => setSheetModalOpen(false)} 
-        characterName={currentCharacter?.name}
+        campanhaId={campanhaId}
+        isOpen={sheetModalOpen} 
+        onClose={() => setSheetModalOpen(false)} 
+        token={currentCharacter}
       />
     </main>
   );

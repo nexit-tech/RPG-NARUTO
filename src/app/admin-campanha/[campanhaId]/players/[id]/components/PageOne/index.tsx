@@ -11,7 +11,7 @@ import CombatBases from './parts/CombatBases';
 import Social from './parts/Social';
 import Skills from './parts/Skills';
 
-export default function PageOne({ data }: { data: any }) {
+export default function PageOne({ data, setData }: { data: any, setData?: any }) {
   // Estado local para permitir edição sem afetar o banco imediatamente
   const [localData, setLocalData] = useState(data);
   const [isEditing, setIsEditing] = useState(false);
@@ -29,13 +29,20 @@ export default function PageOne({ data }: { data: any }) {
     }));
   };
 
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      if (setData) setData(localData);
+    }
+    setIsEditing(!isEditing);
+  };
+
   return (
     <div className={styles.container}>
       {/* BARRA DE CONTROLE DE EDIÇÃO */}
       <div className={styles.editBar}>
         <button 
           className={`${styles.editBtn} ${isEditing ? styles.saveBtn : ''}`}
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={handleToggleEdit}
         >
           {isEditing ? (
             <><Save size={18} /> SALVAR FICHA</>
@@ -47,7 +54,7 @@ export default function PageOne({ data }: { data: any }) {
 
       {/* Topo: Atributos */}
       <Attributes 
-        data={localData.attributes} 
+        data={localData?.attributes || { for: 0, des: 0, agi: 0, per: 0, int: 0, vig: 0, esp: 0 }} 
         isEditing={isEditing} 
         onChange={(d: any) => updateSection('attributes', d)} 
       />
@@ -57,30 +64,29 @@ export default function PageOne({ data }: { data: any }) {
         
         {/* --- LINHA 1: COMBATE --- */}
         <Vitals 
-          data={localData.combatStats} // Passando objeto inteiro agora
+          data={localData?.combatStats || {}} 
           isEditing={isEditing}
           onChange={(d: any) => updateSection('combatStats', d)}
         />
         
         <Armors 
-          data={localData.defenses} 
+          data={localData?.defenses || {}} 
           isEditing={isEditing}
           onChange={(d: any) => updateSection('defenses', d)}
         />
         
-        {/* Passando TUDO que o CombatStats precisa para calcular */}
         <CombatStats 
-          data={localData.combatStats} 
-          attributes={localData.attributes}
-          skills={localData.skills}
-          bases={localData.bases}
+          data={localData?.combatStats || {}} 
+          attributes={localData?.attributes || {}}
+          skills={localData?.skills || []}
+          bases={localData?.bases || {}}
           isEditing={isEditing}
           onChange={(d: any) => updateSection('combatStats', d)}
         />
         
         <CombatBases 
-          data={localData.bases} 
-          attributes={localData.attributes} // Passando os atributos para a base
+          data={localData?.bases || {}} 
+          attributes={localData?.attributes || {}} 
           isEditing={isEditing}
           onChange={(d: any) => updateSection('bases', d)}
         />
@@ -88,7 +94,7 @@ export default function PageOne({ data }: { data: any }) {
         {/* --- LINHA 2: TÉCNICA --- */}
         <div className={styles.span2}>
           <Social 
-            data={localData.social} 
+            data={localData?.social || {}} 
             isEditing={isEditing}
             onChange={(d: any) => updateSection('social', d)}
           />
@@ -96,8 +102,8 @@ export default function PageOne({ data }: { data: any }) {
         
         <div className={styles.span2}>
           <Skills 
-            data={localData.skills} 
-            attributes={localData.attributes} // Passando atributos para as perícias!
+            data={localData?.skills || []} 
+            attributes={localData?.attributes || {}} 
             isEditing={isEditing}
             onChange={(d: any) => updateSection('skills', d)}
           />

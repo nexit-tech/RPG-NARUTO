@@ -4,6 +4,8 @@ import styles from './styles.module.css';
 
 export interface Token {
   id: string;
+  originalId?: string;
+  originalTable?: 'players' | 'npcs' | 'mobs';
   name: string;
   type: string;
   img: string;
@@ -22,20 +24,21 @@ export interface BattleMapProps {
   showGrid: boolean;
   gridScale: number;
   snapToGrid: boolean;
-  interactionMode: 'move' | 'attack' | 'heal' | 'down' | 'aoe_cone' | 'aoe_circle' | 'aoe_line';
+  interactionMode: 'move' | 'attack' | 'heal' | 'down' | 'aoe_cone' | 'aoe_circle' | 'aoe_line' | 'spawn';
   tokens: Token[];
   onMoveToken: (id: string, x: number, y: number) => void;
+  onTokenDrag: (id: string, x: number, y: number) => void;
   onTokenAction: (action: 'attack' | 'heal' | 'down', targetId: string) => void;
   onAoEComplete: (targets: Token[], shape: string) => void;
   onDeleteToken: (id: string) => void; 
+  onMapClick?: (x: number, y: number) => void; 
 }
 
 const GRID_PX = 60;
-const METERS_PER_CELL = 1.5;
 
 export default function BattleMap({ 
   imageUrl, showGrid, gridScale, snapToGrid, interactionMode, 
-  tokens, onMoveToken, onTokenAction, onAoEComplete, onDeleteToken 
+  tokens, onMoveToken, onTokenDrag, onTokenAction, onAoEComplete, onDeleteToken, onMapClick 
 }: BattleMapProps) {
   
   const mapRef = useRef<HTMLDivElement>(null);
@@ -49,18 +52,23 @@ export default function BattleMap({
     visible: false, x: 0, y: 0, targetId: null
   });
 
-  // --- HANDLERS MOUSE ---
   const handleMouseDown = (e: React.MouseEvent, token?: Token) => {
     if (e.button !== 0) return;
     e.preventDefault(); e.stopPropagation();
     
-    // Fecha menu se clicar fora (no mapa)
     setContextMenu({ ...contextMenu, visible: false });
 
     if (!mapRef.current) return;
     const rect = mapRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
+
+    if (interactionMode === 'spawn' && onMapClick) {
+      const gridX = snapToGrid ? Math.floor(clickX / GRID_PX) : clickX / GRID_PX;
+      const gridY = snapToGrid ? Math.floor(clickY / GRID_PX) : clickY / GRID_PX;
+      onMapClick(gridX, gridY);
+      return;
+    }
 
     if (interactionMode.startsWith('aoe')) {
       setIsDrawingAoE(true);
@@ -84,8 +92,13 @@ export default function BattleMap({
     const rect = mapRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    
     setMousePos({ x, y });
-    if (dragState.id) setDragState(prev => ({ ...prev, x, y }));
+    
+    if (dragState.id) {
+      setDragState(prev => ({ ...prev, x, y }));
+      onTokenDrag(dragState.id, x / GRID_PX, y / GRID_PX);
+    }
   };
 
   const handleMouseUp = () => {
@@ -107,19 +120,14 @@ export default function BattleMap({
     }
   };
 
-  // --- MENU DE CONTEXTO ---
   const handleContextMenu = (e: React.MouseEvent, token?: Token) => {
     e.preventDefault(); e.stopPropagation();
-    if (isDrawingAoE) {
-      setIsDrawingAoE(false);
-      setAoeStart({ x: 0, y: 0 });
-      return;
-    }
+    if (interactionMode === 'spawn' || isDrawingAoE) return;
+
     if (mapRef.current && token) {
       const rect = mapRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
-      // Posicionamento inteligente
       const menuW = 160; const menuH = 170;
       const finalX = (clickX + menuW > rect.width) ? clickX - menuW : clickX;
       const finalY = (clickY + menuH > rect.height) ? clickY - menuH : clickY;
@@ -131,12 +139,10 @@ export default function BattleMap({
     if (contextMenu.targetId) {
       if (action === 'delete') onDeleteToken(contextMenu.targetId);
       else onTokenAction(action, contextMenu.targetId);
-      
       setContextMenu({ ...contextMenu, visible: false });
     }
   };
 
-  // --- CÁLCULO AOE & RENDER ---
   const calculateAoECollision = () => {
     const targets: Token[] = [];
     const dx = mousePos.x - aoeStart.x;
@@ -182,15 +188,13 @@ export default function BattleMap({
 
     return (
       <div className={styles.aoeContainer}>
-        <svg className={styles.svgOverlay}>
+        {/* CORREÇÃO DAS FORMAS DE ÁREA DE EFEITO */}
+        <svg className={styles.svgOverlay} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
           {interactionMode === 'aoe_circle' && (
-            <>
-              <circle cx={aoeStart.x} cy={aoeStart.y} r={dist} fill="rgba(255, 0, 0, 0.2)" stroke="#ff0000" strokeWidth="2" />
-              <line x1={aoeStart.x} y1={aoeStart.y} x2={mousePos.x} y2={mousePos.y} stroke="#fff" strokeDasharray="5,5" />
-            </>
+            <circle cx={aoeStart.x} cy={aoeStart.y} r={dist} fill="rgba(255, 0, 0, 0.2)" stroke="#ff0000" strokeWidth="2" />
           )}
           {interactionMode === 'aoe_line' && (
-            <line x1={aoeStart.x} y1={aoeStart.y} x2={mousePos.x} y2={mousePos.y} stroke="rgba(255, 0, 0, 0.5)" strokeWidth="60" />
+            <line x1={aoeStart.x} y1={aoeStart.y} x2={mousePos.x} y2={mousePos.y} stroke="rgba(255, 0, 0, 0.4)" strokeWidth={GRID_PX} strokeLinecap="round" />
           )}
           {interactionMode === 'aoe_cone' && (
             <path d={describeCone(aoeStart.x, aoeStart.y, dist, rotationDeg - 30, rotationDeg + 30)} fill="rgba(255, 0, 0, 0.3)" stroke="#ff0000" strokeWidth="2" />
@@ -221,66 +225,68 @@ export default function BattleMap({
   };
 
   return (
-    <div className={`${styles.viewport} ${styles[interactionMode]}`} 
-      ref={mapRef} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} 
-      onMouseLeave={() => { if(dragState.id) handleMouseUp(); if(isDrawingAoE) setIsDrawingAoE(false); }}
-      onMouseDown={(e) => handleMouseDown(e)} 
-      onContextMenu={(e) => handleContextMenu(e)} 
-    >
-      <img src={imageUrl} alt="Mapa" className={styles.mapImage} draggable={false} />
-      {showGrid && <div className={styles.gridOverlay} style={{backgroundSize: `${GRID_PX}px ${GRID_PX}px`}}></div>}
+    <div className={styles.viewport} style={{ overflow: 'auto', width: '100%', height: '100%', position: 'relative' }}>
       
-      {renderDynamicAoE()}
-
-      {dragState.id && (
-        <div className={styles.measurementLayer}>
-          <svg className={styles.svgOverlay}>
-            <line x1={startGrid.x * GRID_PX + GRID_PX/2} y1={startGrid.y * GRID_PX + GRID_PX/2} x2={dragState.x} y2={dragState.y} stroke="#ff6600" strokeWidth="2" strokeDasharray="5,5" />
-          </svg>
-          <div className={styles.distanceBadge} style={{ left: dragState.x + 20, top: dragState.y - 40 }}>{getDistance()}m</div>
-        </div>
-      )}
-
-      {tokens.map(token => {
-        const isDragging = token.id === dragState.id;
-        const left = isDragging ? dragState.x - GRID_PX/2 : token.x * GRID_PX;
-        const top = isDragging ? dragState.y - GRID_PX/2 : token.y * GRID_PX;
+      <div 
+        ref={mapRef} 
+        style={{ position: 'relative', display: 'inline-block', minWidth: '100%', minHeight: '100%', cursor: interactionMode === 'spawn' ? 'crosshair' : 'default' }}
+        onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} 
+        onMouseLeave={() => { if(dragState.id) handleMouseUp(); if(isDrawingAoE) setIsDrawingAoE(false); }}
+        onMouseDown={handleMouseDown} 
+        onContextMenu={handleContextMenu}
+      >
+        <img src={imageUrl} alt="Mapa" style={{ display: 'block', width: '100%', height: 'auto' }} draggable={false} />
         
-        // Estilo Derrubado (Cinza e Transparente)
-        const tokenStyle = token.isDown ? { filter: 'grayscale(100%)', opacity: 0.6 } : {};
+        {showGrid && <div className={styles.gridOverlay} style={{backgroundSize: `${GRID_PX}px ${GRID_PX}px`, position: 'absolute', inset: 0}}></div>}
+        
+        {renderDynamicAoE()}
 
-        return (
-          <div
-            key={token.id}
-            className={`${styles.token} ${isDragging ? styles.dragging : ''}`}
-            style={{ width: GRID_PX, height: GRID_PX, left, top, ...tokenStyle }}
-            onMouseDown={(e) => handleMouseDown(e, token)}
-            onContextMenu={(e) => handleContextMenu(e, token)}
-          >
-            <img src={token.img} alt={token.name} className={styles.tokenImg} style={{ borderColor: token.type === 'enemy' ? '#ff4444' : '#44ff88' }} />
-            {token.isDown && <div style={{position:'absolute', fontSize:24, zIndex:101, textShadow: '0 0 5px black'}}>💀</div>}
-            <div className={styles.miniHp}><div className={styles.miniHpFill} style={{width: `${Math.max(0, (token.hp/token.maxHp)*100)}%`, background: token.type === 'enemy' ? '#ff4444' : '#44ff88'}}/></div>
+        {dragState.id && (
+          <div className={styles.measurementLayer}>
+            <svg className={styles.svgOverlay} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+              <line x1={startGrid.x * GRID_PX + GRID_PX/2} y1={startGrid.y * GRID_PX + GRID_PX/2} x2={dragState.x} y2={dragState.y} stroke="#ff6600" strokeWidth="2" strokeDasharray="5,5" />
+            </svg>
+            <div className={styles.distanceBadge} style={{ left: dragState.x + 20, top: dragState.y - 40 }}>{getDistance()}m</div>
           </div>
-        );
-      })}
+        )}
 
-      {contextMenu.visible && (
-        <>
-          <div className={styles.menuBackdrop} onClick={() => setContextMenu({...contextMenu, visible: false})} />
-          {/* CRUCIAL: onMouseDown stopPropagation impede que o clique no menu passe para o mapa e feche o menu */}
-          <div 
-            className={styles.contextMenu} 
-            style={{ top: contextMenu.y, left: contextMenu.x }}
-            onMouseDown={(e) => e.stopPropagation()} 
-          >
-            <div className={styles.menuHeader}>AÇÕES</div>
-            <button className={styles.menuBtn} onClick={() => handleActionClick('attack')}><Sword size={16}/> Atacar</button>
-            <button className={styles.menuBtn} onClick={() => handleActionClick('heal')}><Heart size={16}/> Curar</button>
-            <button className={styles.menuBtn} onClick={() => handleActionClick('down')}><Skull size={16}/> Derrubar</button>
-            <button className={`${styles.menuBtn} ${styles.delBtn}`} onClick={() => handleActionClick('delete')}><Trash2 size={16}/> Remover</button>
-          </div>
-        </>
-      )}
+        {tokens.map(token => {
+          const left = token.x * GRID_PX;
+          const top = token.y * GRID_PX;
+          const tokenStyle = token.isDown ? { filter: 'grayscale(100%)', opacity: 0.6 } : {};
+
+          return (
+            <div
+              key={token.id}
+              className={`${styles.token} ${token.id === dragState.id ? styles.dragging : ''}`}
+              style={{ width: GRID_PX, height: GRID_PX, left, top, ...tokenStyle, position: 'absolute' }}
+              onMouseDown={(e) => handleMouseDown(e, token)}
+              onContextMenu={(e) => handleContextMenu(e, token)}
+            >
+              <img src={token.img} alt={token.name} className={styles.tokenImg} style={{ borderColor: token.type === 'enemy' ? '#ff4444' : '#44ff88', width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              {token.isDown && <div style={{position:'absolute', fontSize:24, zIndex:101, textShadow: '0 0 5px black'}}>💀</div>}
+              <div className={styles.miniHp}><div className={styles.miniHpFill} style={{width: `${Math.max(0, (token.hp/token.maxHp)*100)}%`, background: token.type === 'enemy' ? '#ff4444' : '#44ff88'}}/></div>
+            </div>
+          );
+        })}
+
+        {contextMenu.visible && (
+          <>
+            <div className={styles.menuBackdrop} onClick={() => setContextMenu({...contextMenu, visible: false})} style={{ position: 'fixed', inset: 0, zIndex: 9999 }} />
+            <div 
+              className={styles.contextMenu} 
+              style={{ position: 'absolute', top: contextMenu.y, left: contextMenu.x, zIndex: 10000 }}
+              onMouseDown={(e) => e.stopPropagation()} 
+            >
+              <div className={styles.menuHeader}>AÇÕES</div>
+              <button className={styles.menuBtn} onClick={() => handleActionClick('attack')}><Sword size={16}/> Atacar</button>
+              <button className={styles.menuBtn} onClick={() => handleActionClick('heal')}><Heart size={16}/> Curar</button>
+              <button className={styles.menuBtn} onClick={() => handleActionClick('down')}><Skull size={16}/> Derrubar</button>
+              <button className={`${styles.menuBtn} ${styles.delBtn}`} onClick={() => handleActionClick('delete')}><Trash2 size={16}/> Remover</button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

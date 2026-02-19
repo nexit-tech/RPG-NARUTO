@@ -9,7 +9,7 @@ import Aptitudes from './parts/Aptitudes';
 import CalcJutsus from './parts/CalcJutsus';
 import CalcWeapons from './parts/CalcWeapons';
 
-export default function PageTwo({ data }: { data: any }) {
+export default function PageTwo({ data, setData }: { data: any, setData?: any }) {
   const [localData, setLocalData] = useState(data || {});
   const [isEditing, setIsEditing] = useState(false);
 
@@ -24,13 +24,20 @@ export default function PageTwo({ data }: { data: any }) {
     }));
   };
 
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      if (setData) setData(localData);
+    }
+    setIsEditing(!isEditing);
+  };
+
   return (
     <div className={styles.container}>
       
       {/* BARRA DE CONTROLE DE EDIÇÃO */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
         <button 
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={handleToggleEdit}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             background: isEditing ? '#22c55e' : '#333',
