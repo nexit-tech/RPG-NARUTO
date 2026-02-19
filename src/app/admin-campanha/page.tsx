@@ -1,9 +1,9 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Users, Skull, Map, Scroll, Shield, PlayCircle, Swords, Activity } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { ArrowLeft, Users, Skull, Map, Scroll, PlayCircle, Swords, Activity } from 'lucide-react';
 import styles from './styles.module.css';
 
 // --- MOCK DATA ---
@@ -11,20 +11,59 @@ const MOCK_PLAYERS = [
   { id: 1, name: 'Naruto Uzumaki', level: 'Nvl 20', class: 'Nanadaime', inCombat: true, img: 'https://imgs.search.brave.com/oeorTa8qLitRgjIz4ApXVeErnXx7JXBTS-Zow0OLM-4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzL2IwLzdl/LzNmL2IwN2UzZmYy/MTYzZDg0MGFlMTll/MmU2YWQ3OTYwMWY1/LmpwZw' },
   { id: 2, name: 'Sasuke Uchiha', level: 'Nvl 20', class: 'Shadow Hokage', inCombat: true, img: 'https://imgs.search.brave.com/HIiVnoJFxGOfdSvGo_TvR6H0ETyr8ajAclCUTASKdp0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS50ZW5vci5jb20v/ZXlKak5EMUN6U2tB/QUFBTS9zYXN1a2Ut/dWNoaWhhLmdpZg.gif' },
   { id: 3, name: 'Sakura Haruno', level: 'Nvl 19', class: 'Médica Ninja', inCombat: false, img: 'https://imgs.search.brave.com/D2pDWEF3zHIQdnLSA29Oy8q17IPCSy3rvC4pQB5NRKk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMud2lraWEubm9j/b29raWUubmV0L25h/cnV0by9pbWFnZXMv/Ni82NC9TYWt1cmFf/UGFydF8xLnBuZy9y/ZXZpc2lvbi9sYXRl/c3Qvc2NhbGUtdG8t/d2lkdGgtZG93bi8z/MDA_Y2I9MjAxNzA3/MjYxMDE0NDQ' },
-  { id: 4, name: 'Kawaki', level: 'Nvl 12', class: 'Karma Vessel', inCombat: false, img: 'https://imgs.search.brave.com/GR2Tp_bwQGCSwoHHnlCdHoPdOJmYMplC2LGzyHF1yYo/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jcml0/aWNhbGhpdHMuY29t/LmJyL3dwLWNvbnRl/bnQvdXBsb2Fkcy8y/MDIxLzA0LzIwMjEw/MjI0LWJvcnV0by1r/YXdha2ktOTEweDUw/MS5qcGcud2VicA' },
 ];
 
 const MOCK_NPCS = [
   { id: 1, name: 'Kakashi Hatake', role: 'Conselheiro', img: 'https://imgs.search.brave.com/EGIZ5oD2mBtZXBrZ10deMReBz4i7m7d4UFKtcrv98Oo/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMud2lraWEubm9j/b29raWUubmV0L3Bf/Xy9pbWFnZXMvNi82/ZS9LYWthc2hpX2lu/Zm9ib3hfaW1hZ2Uu/cG5nL3JldmlzaW9u/L2xhdGVzdC9zY2Fs/ZS10by13aWR0aC1k/b3duLzI2OD9jYj0y/MDE4MDQxNzIzNTEz/NCZwYXRoLXByZWZp/eD1wcm90YWdvbmlz/dA' },
-  { id: 2, name: 'Tsunade Senju', role: 'Lendária', img: 'https://imgs.search.brave.com/sa91CuLR-8_e4mum1jiMr95MlA6SwLjsn1q-KtHpOxQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMwLmNicmltYWdl/cy5jb20vd29yZHBy/ZXNzL3dwLWNvbnRl/bnQvdXBsb2Fkcy8y/MDIwLzEwL1RzdW5h/ZGUtTmFydXRvLTcu/anBnP3E9NTAmZml0/PWNyb3Amdz04MjUm/ZHByPTEuNQ' },
 ];
 
 const MOCK_MOBS = [
   { id: 1, name: 'Zetsu Branco', level: 'Nvl 5', type: 'Minion', img: 'https://imgs.search.brave.com/hAIyZtVgluqvO_176cybig8JoSIDDzB1ZBt-gyR6spQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jcml0/aWNhbGhpdHMuY29t/LmJyL3dwLWNvbnRl/bnQvdXBsb2Fkcy8y/MDIwLzEyL1NoaXJv/X1pldHN1LTkxMHg1/MTguanBn' },
 ];
 
-export default function CampaignDashboard() {
-  const router = useRouter();
+// Lemos o parâmetro ?id= da URL usando "searchParams"
+export default async function CampaignDashboard({ searchParams }: { searchParams: { id?: string } }) {
+  const id = searchParams.id;
+
+  // Se o mestre tentar entrar direto em /admin-campanha sem clicar numa campanha, mandamos ele de volta!
+  if (!id) {
+    redirect('/adminpage');
+  }
+
+  // Conectamos ao banco
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+      },
+    }
+  );
+
+  // Puxamos a campanha ESPECÍFICA baseada no ID da URL
+  const { data: campanha, error } = await supabase
+    .from('campanhas')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !campanha) {
+    return (
+      <main className={styles.container}>
+        <div style={{ textAlign: 'center', marginTop: '5rem', color: 'white' }}>
+          <h2>Erro 404 - Pergaminho não encontrado!</h2>
+          <p>Esta campanha não existe ou foi apagada.</p>
+          <Link href="/adminpage" style={{ color: '#ff6600', textDecoration: 'underline' }}>
+            Voltar para as Missões
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className={styles.container}>
@@ -32,14 +71,13 @@ export default function CampaignDashboard() {
         <Link href="/adminpage" className={styles.backLink}>
           <ArrowLeft size={20} /> Voltar para Missões
         </Link>
-        <h1 className={styles.pageTitle}>Painel de Controle</h1>
+        {/* NOME VINDO DO BANCO DE DADOS! */}
+        <h1 className={styles.pageTitle}>Painel: {campanha.nome}</h1>
       </header>
 
       <div className={styles.dashboardGrid}>
         
-        {/* === COLUNA ESQUERDA (Sessão + Estratégia) === */}
         <div className={styles.leftColumn}>
-          {/* 1. SESSÃO ATIVA (Ocupa o resto do espaço) */}
           <section className={styles.activeSessionBlock}>
             <div className={styles.cardHeader}>
               <PlayCircle className={styles.icon} />
@@ -71,13 +109,13 @@ export default function CampaignDashboard() {
               </div>
             </div>
 
-            <Link href="/admin-campanha/sessao-ativa" className={styles.mainActionBtn}>
+            {/* ATENÇÃO: Repassamos o ID para a próxima página saber qual campanha estamos! */}
+            <Link href={`/admin-campanha/sessao-ativa?id=${id}`} className={styles.mainActionBtn}>
               ABRIR PAINEL DE COMBATE
             </Link>
           </section>
 
-          {/* 2. SALA DE ESTRATÉGIA (Barra Fixa na base) */}
-          <Link href="/admin-campanha/planejamento" className={styles.strategyBlock}>
+          <Link href={`/admin-campanha/planejamento?id=${id}`} className={styles.strategyBlock}>
             <div className={styles.strategyContent}>
               <div className={styles.strategyHeader}>
                 <Map className={styles.icon} />
@@ -89,11 +127,9 @@ export default function CampaignDashboard() {
           </Link>
         </div>
 
-        {/* === COLUNA DIREITA (Mobs, Players, NPCs) === */}
         <div className={styles.rightColumn}>
           
-          {/* 1. Bestiário */}
-          <Link href="/admin-campanha/mobs" className={styles.sideCard}>
+          <Link href={`/admin-campanha/mobs?id=${id}`} className={styles.sideCard}>
             <div className={styles.cardHeader}>
               <Skull className={styles.icon} />
               <h2>Bestiário (Mobs)</h2>
@@ -111,8 +147,7 @@ export default function CampaignDashboard() {
             </div>
           </Link>
 
-          {/* 2. Equipe Shinobi */}
-          <Link href="/admin-campanha/players" className={styles.sideCard}>
+          <Link href={`/admin-campanha/players?id=${id}`} className={styles.sideCard}>
             <div className={styles.cardHeader}>
               <Users className={styles.icon} />
               <h2>Equipe Shinobi</h2>
@@ -128,8 +163,7 @@ export default function CampaignDashboard() {
             </div>
           </Link>
 
-          {/* 3. Bingo Book */}
-          <Link href="/admin-campanha/npcs" className={styles.sideCard}>
+          <Link href={`/admin-campanha/npcs?id=${id}`} className={styles.sideCard}>
             <div className={styles.cardHeader}>
               <Scroll className={styles.icon} />
               <h2>Bingo Book (NPCs)</h2>
