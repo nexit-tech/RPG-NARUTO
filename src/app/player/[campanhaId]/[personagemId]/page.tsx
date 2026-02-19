@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Map, BookOpen } from 'lucide-react';
 import SessaoTab from './tabs/SessaoTab';
@@ -9,13 +9,19 @@ import styles from './styles.module.css';
 
 type Tab = 'sessao' | 'ficha';
 
-export default function PersonagemPage({ params }: { params: { campanhaId: string; personagemId: string } }) {
+export default function PersonagemPage({ 
+  params 
+}: { 
+  params: Promise<{ campanhaId: string; personagemId: string }> 
+}) {
+  // Desempacotando os parâmetros da URL (Next.js 15)
+  const resolvedParams = use(params);
   const [activeTab, setActiveTab] = useState<Tab>('sessao');
 
   return (
     <main className={styles.container}>
       <header className={styles.header}>
-        <Link href={`/player/${params.campanhaId}`} className={styles.backLink}>
+        <Link href={`/player/${resolvedParams.campanhaId}`} className={styles.backLink}>
           <ArrowLeft size={20} /> Personagens
         </Link>
         <div className={styles.tabsBar}>
@@ -36,8 +42,21 @@ export default function PersonagemPage({ params }: { params: { campanhaId: strin
       </header>
 
       <div className={styles.content}>
-        {activeTab === 'sessao' && <SessaoTab />}
-        {activeTab === 'ficha'  && <FichaTab />}
+        {/* Passando os IDs para que a SessaoTab possa sincronizar com o banco */}
+        {activeTab === 'sessao' && (
+          <SessaoTab 
+            campanhaId={resolvedParams.campanhaId} 
+            personagemId={resolvedParams.personagemId} 
+          />
+        )}
+        
+        {/* Passando os IDs para que a FichaTab puxe os dados reais do Nathan */}
+        {activeTab === 'ficha' && (
+          <FichaTab 
+            campanhaId={resolvedParams.campanhaId} 
+            personagemId={resolvedParams.personagemId} 
+          />
+        )}
       </div>
     </main>
   );

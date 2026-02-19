@@ -5,14 +5,12 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import styles from './styles.module.css';
 
-// Pegando EXATAMENTE os mesmos componentes do Mestre
 import InitiativeTracker from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/InitiativeTracker';
 import BattleMap, { Token } from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/BattleMap';
 import CombatLog from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/CombatLog';
 import CurrentTurnPanel from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/CurrentTurnPanel';
 import QuickSheetModal from '@/app/admin-campanha/[campanhaId]/sessao-ativa/components/QuickSheetModal';
 
-// O único diferente é o controle lateral
 import PlayerControls from './components/PlayerControls';
 
 interface SessaoTabProps {
@@ -24,7 +22,8 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Estados sincronizados com o Mestre
+  const [interactionMode, setInteractionMode] = useState<'move' | 'attack' | 'heal' | 'aoe_cone' | 'aoe_circle' | 'aoe_line'>('move');
+
   const [tokens, setTokens] = useState<Token[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [mapUrl, setMapUrl] = useState('https://i.pinimg.com/originals/99/3a/05/993a059c03db26993952dc67b931920d.jpg');
@@ -39,11 +38,7 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
   const channelRef = useRef<any>(null);
 
   useEffect(() => {
-    if (campanhaId) {
-      fetchSessionData();
-    } else {
-      console.warn("Aguardando carregar ID da campanha...");
-    }
+    if (campanhaId) fetchSessionData();
   }, [campanhaId]);
 
   useEffect(() => {
@@ -65,7 +60,8 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
               name: t.nome, type: t.token_type === 'enemy' || t.token_type === 'mob' ? 'enemy' : 'player',
               img: t.img, x: t.map_x, y: t.map_y,
               hp: t.hp, maxHp: t.max_hp, cp: t.cp, maxCp: t.max_cp,
-              level: t.level, class: t.class, stats: { atk: t.atk, def: t.def, esq: t.esq, cd: t.cd },
+              level: t.level, class: t.class, 
+              stats: { atk: t.atk, def: t.def, esq: t.esq, cd: t.cd },
               initiative: t.initiative || 0, inCombat: t.in_combat, isDown: t.is_down
             };
             return [...prev, newToken].sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
@@ -75,8 +71,9 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
           const t = payload.new;
           setTokens(prev => {
               const updated = prev.map(existing => existing.id === t.id ? {
-                  ...existing, x: t.map_x, y: t.map_y, hp: t.hp, cp: t.cp,
-                  inCombat: t.in_combat, isDown: t.is_down, initiative: t.initiative
+                  ...existing, x: t.map_x, y: t.map_y, hp: t.hp, maxHp: t.max_hp, cp: t.cp, maxCp: t.max_cp,
+                  inCombat: t.in_combat, isDown: t.is_down, initiative: t.initiative,
+                  stats: { atk: t.atk, def: t.def, esq: t.esq, cd: t.cd }
               } : existing);
               return updated.sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
           });
@@ -101,20 +98,13 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
 
     channelRef.current = channel;
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [sessionId]);
 
   async function fetchSessionData() {
     try {
-      setLoading(true); // Garante que começa carregando
-      const { data: sessao, error: sessaoErr } = await supabase.from('sessoes').select('*').eq('campanha_id', campanhaId).single();
-
-      if (sessaoErr) {
-        console.warn("Mestre ainda não criou uma sessão ativa no banco para essa campanha.");
-        // Não jogamos erro na tela, apenas deixamos a mesa vazia aguardando!
-      }
+      setLoading(true);
+      const { data: sessao } = await supabase.from('sessoes').select('*').eq('campanha_id', campanhaId).single();
 
       if (sessao) {
         setSessionId(sessao.id);
@@ -142,22 +132,30 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
         }
       }
     } catch (err) {
-      console.error("Erro fatal ao carregar a sessão: ", err);
+      console.error("Erro fatal:", err);
     } finally {
-      // O SEGREDO TÁ AQUI: Dar erro ou dar bom, o loading para de rodar e a página abre!
       setLoading(false);
     }
   }
 
-  // Identificadores e Travas do Jogador
   const safeTokens = tokens || [];
   const myToken = safeTokens.find(t => t.originalId === personagemId);
-  const displayedTokens = combatActive ? safeTokens.filter(t => t.inCombat !== false) : safeTokens;
+  
+  // REGRA: Nathan nunca some do combate
+  const displayedTokens = combatActive 
+    ? safeTokens.filter(t => t.inCombat !== false || t.originalId === personagemId) 
+    : safeTokens;
+
   const safeTurnIndex = (displayedTokens.length > 0 && currentTurnIndex < displayedTokens.length) ? currentTurnIndex : 0;
 
+  // Lógica de Travamento de Turno
+  const isMyTurn = displayedTokens[safeTurnIndex]?.originalId === personagemId;
+  const canAct = !combatActive || isMyTurn;
+
   const handleTokenDrag = (id: string, x: number, y: number) => {
+    if (!canAct) return;
     const tokenDragged = safeTokens.find(t => t.id === id);
-    if (tokenDragged?.originalId !== personagemId) return; // Só move o próprio boneco
+    if (tokenDragged?.originalId !== personagemId) return;
 
     setTokens(prev => prev.map(t => t.id === id ? { ...t, x, y } : t));
     if (channelRef.current) {
@@ -166,8 +164,9 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
   };
 
   const handleMoveToken = async (id: string, x: number, y: number) => {
+    if (!canAct) return;
     const tokenMoved = safeTokens.find(t => t.id === id);
-    if (tokenMoved?.originalId !== personagemId) return; // Só atualiza no DB o próprio boneco
+    if (tokenMoved?.originalId !== personagemId) return;
 
     setTokens(prev => prev.map(t => t.id === id ? { ...t, x, y } : t));
     await supabase.from('sessao_tokens').update({ map_x: x, map_y: y }).eq('id', id);
@@ -176,8 +175,8 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
-        <Loader2 size={50} className="animate-spin" />
-        <p>Carregando mesa...</p>
+        <Loader2 size={50} className="animate-spin" color="#ff6600" />
+        <p>Conectando ao Campo de Batalha...</p>
       </div>
     );
   }
@@ -185,7 +184,6 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
   return (
     <div className={styles.layout}>
       
-      {/* 1. EM CIMA: Tracker de Iniciativa */}
       <section className={styles.areaInitiative}>
         <InitiativeTracker 
           order={displayedTokens} 
@@ -198,18 +196,22 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
 
       <div className={styles.mainGrid}>
         
-        {/* 2. NA ESQUERDA: Controles do Jogador */}
         <aside className={styles.areaControls}>
-          <PlayerControls onOpenSheet={() => setSheetModalOpen(true)} />
+          <PlayerControls 
+            interactionMode={interactionMode}
+            setInteractionMode={setInteractionMode}
+            combatActive={combatActive}
+            isMyTurn={isMyTurn}
+            onOpenSheet={() => setSheetModalOpen(true)} 
+          />
         </aside>
 
-        {/* 3. NO MEIO: Mapa e as Informações do Jogador */}
         <div className={styles.centerCol}>
           <section className={`${styles.areaMap} move`}>
             <BattleMap 
               imageUrl={mapUrl} showGrid={showGrid} 
               gridScale={gridScale} snapToGrid={snapToGrid}
-              interactionMode="move"
+              interactionMode={interactionMode}
               tokens={displayedTokens} 
               onMoveToken={handleMoveToken}
               onTokenDrag={handleTokenDrag} 
@@ -220,11 +222,9 @@ export default function SessaoTab({ campanhaId, personagemId }: SessaoTabProps) 
             />
           </section>
           
-          {/* Informações de quem tá logado (Ex: Nathan) cravadas lá no fundo */}
           {myToken && <CurrentTurnPanel character={myToken} />}
         </div>
 
-        {/* 4. NA DIREITA: Log de Combate */}
         <aside className={styles.areaLog}>
           <CombatLog logs={logs} />
         </aside>
