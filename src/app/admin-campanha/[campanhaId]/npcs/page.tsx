@@ -8,11 +8,9 @@ import { supabase } from '@/lib/supabase';
 import styles from './styles.module.css';
 import CreateNpcModal from './components/CreateNpcModal';
 
-// Definimos a interface para o Next.js 15
 export default function NpcsPage({ params }: { params: Promise<{ campanhaId: string }> }) {
   const router = useRouter();
   
-  // 1. DESEMPACOTANDO PARAMS (Resolve o erro "params is a Promise")
   const resolvedParams = use(params);
   const campanhaId = resolvedParams.campanhaId;
 
@@ -20,7 +18,6 @@ export default function NpcsPage({ params }: { params: Promise<{ campanhaId: str
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (campanhaId) {
@@ -44,10 +41,8 @@ export default function NpcsPage({ params }: { params: Promise<{ campanhaId: str
     setLoading(false);
   }
 
-  const handleCreate = async (name: string) => {
-    setCreating(true);
-    
-    // 2. INSERINDO NO BANCO COM DADOS ZERADOS
+  // ← Agora retorna Promise<void> para o modal conseguir fazer await
+  const handleCreate = async (name: string): Promise<void> => {
     const { data, error } = await supabase
       .from('npcs')
       .insert({
@@ -57,25 +52,24 @@ export default function NpcsPage({ params }: { params: Promise<{ campanhaId: str
         tipo: 'aliado',
         hp: 100, max_hp: 100, cp: 100, max_cp: 100,
         atk: 10, def: 10, esq: 10, cd: 10,
-        habilidades: {} // Inicializa a ficha JSONB vazia
+        habilidades: {}
       })
       .select('id')
       .single();
 
     if (error) {
       console.error('Erro ao criar NPC:', error);
-      setCreating(false);
-      return;
+      throw error; // ← Joga o erro para o modal tratar
     }
 
     if (data?.id) {
+      // Fecha o modal antes de redirecionar
       setIsModalOpen(false);
-      // 3. REDIRECIONAMENTO COM CAMINHO CORRETO
-      // Incluímos o campanhaId para que ele caia na pasta dinâmica certa
+      // Pequeno delay para garantir que o estado atualizou
+      await new Promise(resolve => setTimeout(resolve, 50));
       router.push(`/admin-campanha/${campanhaId}/npcs/${data.id}`);
     } else {
-      setCreating(false);
-      console.error("ID não retornado pelo banco.");
+      throw new Error('ID não retornado pelo banco.');
     }
   };
 
@@ -90,9 +84,9 @@ export default function NpcsPage({ params }: { params: Promise<{ campanhaId: str
           <Link href={`/admin-campanha/${campanhaId}`} className={styles.backLink}>
             <ArrowLeft size={20} /> Painel
           </Link>
-          <button className={styles.createBtn} onClick={() => setIsModalOpen(true)} disabled={creating}>
-            {creating ? <Loader2 size={18} className={styles.spinner} /> : <Plus size={18} />}
-            <span>{creating ? 'Invocando...' : 'Novo NPC'}</span>
+          <button className={styles.createBtn} onClick={() => setIsModalOpen(true)}>
+            <Plus size={18} />
+            <span>Novo NPC</span>
           </button>
         </div>
         
